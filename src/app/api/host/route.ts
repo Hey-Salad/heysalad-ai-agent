@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKey } from "@/lib/auth";
-import { runHostAgent, type HostInput } from "@/lib/agent";
+import { runHostAgent } from "@/lib/ai/agents/host";
 
 export async function POST(request: NextRequest) {
   if (!validateApiKey(request)) {
@@ -8,17 +8,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = (await request.json()) as HostInput;
+    const body = await request.json();
 
-    if (!body.businessName || !body.customerMessage) {
+    if (!body.businessId || !body.businessName || !body.customerMessage) {
       return NextResponse.json(
-        { error: "businessName and customerMessage are required" },
+        { error: "businessId, businessName, and customerMessage are required" },
         { status: 400 }
       );
     }
 
-    const response = await runHostAgent(body);
-    return NextResponse.json(response);
+    const { response, agentRunId } = await runHostAgent({
+      businessId: body.businessId,
+      conversationId: body.conversationId,
+      businessName: body.businessName,
+      businessType: body.businessType || "RESTAURANT",
+      knowledgeContext: body.knowledgeContext || "",
+      greeting: body.greeting || `Thanks for contacting ${body.businessName}.`,
+      customerMessage: body.customerMessage,
+      conversationHistory: body.conversationHistory,
+      escalationRules: body.escalationRules,
+      forbiddenClaims: body.forbiddenClaims,
+    });
+
+    return NextResponse.json({ response, agentRunId });
   } catch (error) {
     console.error("Host agent error:", error);
     return NextResponse.json(

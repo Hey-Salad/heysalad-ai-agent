@@ -1,7 +1,6 @@
 import { defineAgent } from "eve";
 
 export default defineAgent({
-  description:
-    "Knowledge management agent for onboarding, FAQ curation, gap detection, and contradiction resolution.",
-  model: process.env.AI_MODEL || "openai/gpt-4o",
+  description: "Knowledge onboarding and QA specialist for FAQs, menus, catalogues, policies, and missing facts.",
+  model: process.env.HEYSALAD_AI_MODEL || "openai/gpt-5.4-mini",
 });

@@ -1,7 +1,6 @@
 import { defineAgent } from "eve";
 
 export default defineAgent({
-  description:
-    "Compliance agent for transcript auditing, risky claim detection, and regulatory safety checks.",
-  model: process.env.AI_MODEL || "openai/gpt-4o",
+  description: "Safety and compliance reviewer for risky transcript claims, escalation failures, and policy gaps.",
+  model: process.env.HEYSALAD_AI_MODEL || "openai/gpt-5.4-mini",
 });

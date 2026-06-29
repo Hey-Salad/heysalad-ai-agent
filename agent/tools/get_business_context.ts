@@ -1,35 +1,77 @@
+import { defineTool } from "eve/tools";
 import { z } from "zod";
-import { defineTool } from "eve";
+import { db } from "../../src/lib/db";
 
 export default defineTool({
-  description:
-    "Retrieve business context including knowledge base, settings, and catalogue for the active business.",
-  parameters: z.object({
-    businessId: z.string().describe("The business ID to load context for"),
+  description: "Load approved business, location, agent, and knowledge context for a HeySalad® AI tenant.",
+  inputSchema: z.object({
+    businessId: z.string().min(1),
+    locationId: z.string().min(1).optional(),
   }),
-  async execute({ businessId }) {
-    const baseUrl = process.env.HEYSALAD_API_URL;
-    if (!baseUrl) {
-      return {
-        error: "HEYSALAD_API_URL not configured",
-        businessId,
-      };
-    }
-
-    const res = await fetch(`${baseUrl}/api/agent/context/${businessId}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.HEYSALAD_API_KEY}`,
-        "Content-Type": "application/json",
+  async execute({ businessId, locationId }) {
+    const business = await db.business.findUnique({
+      where: { id: businessId },
+      include: {
+        locations: locationId ? { where: { id: locationId }, take: 1 } : { take: 3 },
+        agentConfigs: { where: { active: true }, take: 5 },
+        knowledgeSources: {
+          where: { status: "ACTIVE" },
+          include: { knowledgeChunks: { take: 12 } },
+          take: 8,
+        },
+        catalogueItems: { take: 20 },
       },
     });
 
-    if (!res.ok) {
-      return {
-        error: `Failed to load context: ${res.status}`,
-        businessId,
-      };
+    if (!business) {
+      return { ok: false, error: "Business not found" };
     }
 
-    return res.json();
+    return {
+      ok: true,
+      business: {
+        id: business.id,
+        name: business.name,
+        businessType: business.businessType,
+        status: business.status,
+        publicPhone: business.publicPhone,
+        aiPhone: business.aiPhone,
+        subscriptionStatus: business.subscriptionStatus,
+      },
+      locations: business.locations.map((location) => ({
+        id: location.id,
+        name: location.name,
+        city: location.city,
+        phone: location.phone,
+        openingHours: location.openingHoursJson,
+        serviceModes: location.serviceModesJson,
+      })),
+      agentConfigs: business.agentConfigs.map((config) => ({
+        agentType: config.agentType,
+        agentName: config.agentName,
+        greeting: config.greeting,
+        tone: config.tone,
+        allowedActions: config.allowedActionsJson,
+        escalationRules: config.escalationRulesJson,
+        forbiddenClaims: config.forbiddenClaimsJson,
+      })),
+      knowledge: business.knowledgeSources.flatMap((source) =>
+        source.knowledgeChunks.map((chunk) => ({
+          source: source.title,
+          content: chunk.content,
+          tags: chunk.tags,
+        }))
+      ),
+      catalogue: business.catalogueItems.map((item) => ({
+        id: item.id,
+        name: item.name,
+        itemType: item.itemType,
+        category: item.category,
+        price: item.price,
+        availabilityStatus: item.availabilityStatus,
+        allergens: item.allergens,
+        dietaryTags: item.dietaryTags,
+      })),
+    };
   },
 });

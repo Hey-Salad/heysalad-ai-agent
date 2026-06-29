@@ -1,6 +1,9 @@
-export const metadata = {
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
   title: "HeySalad AI Agent",
-  description: "Open-source AI agent for food businesses",
+  description: "Open-source AI platform for food businesses — agents, voice, payments, marketplace",
 };
 
 export default function RootLayout({
@@ -10,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

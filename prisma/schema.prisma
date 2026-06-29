@@ -1,0 +1,318 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+  output          = "../src/generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum BusinessType {
+  RESTAURANT
+  CAFE
+  BAKERY
+  GROCER
+  SUPERMARKET
+  FOOD_RETAILER
+  BUTCHER
+  FISHMONGER
+  DELI
+  DARK_KITCHEN
+  CLOUD_KITCHEN
+  CATERER
+  FOOD_MARKET
+  FOOD_HALL
+  MEAL_PREP
+}
+
+enum AgentType {
+  HOST
+  KNOWLEDGE
+  SALES
+  OPERATIONS
+  COMPLIANCE
+}
+
+enum AgentRunStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum CallDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CallStatus {
+  INITIATED
+  RINGING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  NO_ANSWER
+  BUSY
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ConversationStatus {
+  OPEN
+  RESOLVED
+  ESCALATED
+  CLOSED
+}
+
+enum KnowledgeSourceStatus {
+  DRAFT
+  APPROVED
+  ARCHIVED
+}
+
+enum KnowledgeSourceType {
+  FAQ
+  MENU
+  POLICY
+  HOURS
+  CUSTOM
+}
+
+// ---------------------------------------------------------------------------
+// Core Models
+// ---------------------------------------------------------------------------
+
+model Business {
+  id           String       @id @default(cuid())
+  name         String
+  slug         String       @unique
+  businessType BusinessType @map("business_type")
+  website      String?
+  publicPhone  String?      @map("public_phone")
+  aiPhone      String?      @map("ai_phone")
+  email        String?
+  timezone     String       @default("Europe/London")
+  currency     String       @default("GBP")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  agentConfigs    AgentConfig[]
+  agentRuns       AgentRun[]
+  bookings        Booking[]
+  calls           Call[]
+  conversations   Conversation[]
+  customers       Customer[]
+  knowledgeSources KnowledgeSource[]
+  knowledgeChunks KnowledgeChunk[]
+  tasks           Task[]
+
+  @@map("businesses")
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  businessId String   @map("business_id")
+  name       String
+  phone      String?
+  email      String?
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  business Business  @relation(fields: [businessId], references: [id])
+  bookings Booking[]
+
+  @@map("customers")
+}
+
+// ---------------------------------------------------------------------------
+// AI Agent Models
+// ---------------------------------------------------------------------------
+
+model AgentConfig {
+  id                  String    @id @default(cuid())
+  businessId          String    @map("business_id")
+  agentName           String    @map("agent_name")
+  agentType           AgentType @map("agent_type")
+  voice               String?
+  tone                String?
+  greeting            String?
+  escalationRulesJson Json?     @map("escalation_rules_json")
+  allowedActionsJson  Json?     @map("allowed_actions_json")
+  forbiddenClaimsJson Json?     @map("forbidden_claims_json")
+  modelSettingsJson   Json?     @map("model_settings_json")
+  active              Boolean   @default(true)
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("agent_configs")
+}
+
+model AgentRun {
+  id              String         @id @default(cuid())
+  businessId      String         @map("business_id")
+  conversationId  String?        @map("conversation_id")
+  agentType       AgentType      @map("agent_type")
+  model           String
+  status          AgentRunStatus @default(RUNNING)
+  inputJson       Json?          @map("input_json")
+  outputJson      Json?          @map("output_json")
+  tokenUsageJson  Json?          @map("token_usage_json")
+  latencyMs       Int?           @map("latency_ms")
+  costEstimate    Float?         @map("cost_estimate")
+  error           String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  business     Business      @relation(fields: [businessId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+
+  @@map("agent_runs")
+}
+
+// ---------------------------------------------------------------------------
+// Communication Models
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id         String             @id @default(cuid())
+  businessId String             @map("business_id")
+  channel    String             @default("VOICE")
+  status     ConversationStatus @default(OPEN)
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  business  Business   @relation(fields: [businessId], references: [id])
+  calls     Call[]
+  agentRuns AgentRun[]
+
+  @@map("conversations")
+}
+
+model Call {
+  id              String        @id @default(cuid())
+  conversationId  String?       @map("conversation_id")
+  businessId      String        @map("business_id")
+  twilioCallSid   String?       @unique @map("twilio_call_sid")
+  fromNumber      String?       @map("from_number")
+  toNumber        String?       @map("to_number")
+  direction       CallDirection @default(INBOUND)
+  status          CallStatus    @default(INITIATED)
+  durationSeconds Int?          @map("duration_seconds")
+  recordingUrl    String?       @map("recording_url")
+  transcript      String?
+  summary         String?
+  outcome         String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  business     Business      @relation(fields: [businessId], references: [id])
+
+  @@map("calls")
+}
+
+// ---------------------------------------------------------------------------
+// Business Operations Models
+// ---------------------------------------------------------------------------
+
+model Booking {
+  id              String        @id @default(cuid())
+  businessId      String        @map("business_id")
+  customerId      String?       @map("customer_id")
+  conversationId  String?       @map("conversation_id")
+  source          String        @default("MANUAL")
+  status          BookingStatus @default(PENDING)
+  partySize       Int?          @map("party_size")
+  bookingStart    DateTime?     @map("booking_start")
+  specialRequests String?       @map("special_requests")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  business Business  @relation(fields: [businessId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("bookings")
+}
+
+model Task {
+  id              String       @id @default(cuid())
+  businessId      String       @map("business_id")
+  conversationId  String?      @map("conversation_id")
+  title           String
+  description     String?
+  priority        TaskPriority @default(MEDIUM)
+  status          TaskStatus   @default(OPEN)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@map("tasks")
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge Base Models
+// ---------------------------------------------------------------------------
+
+model KnowledgeSource {
+  id             String                @id @default(cuid())
+  businessId     String                @map("business_id")
+  sourceType     KnowledgeSourceType   @map("source_type")
+  title          String
+  url            String?
+  rawText        String?               @map("raw_text")
+  status         KnowledgeSourceStatus @default(DRAFT)
+  lastReviewedAt DateTime?             @map("last_reviewed_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  business        Business         @relation(fields: [businessId], references: [id])
+  knowledgeChunks KnowledgeChunk[]
+
+  @@map("knowledge_sources")
+}
+
+model KnowledgeChunk {
+  id                String   @id @default(cuid())
+  knowledgeSourceId String   @map("knowledge_source_id")
+  businessId        String   @map("business_id")
+  content           String
+  tags              String[]
+  freshnessScore    Float?   @map("freshness_score")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  knowledgeSource KnowledgeSource @relation(fields: [knowledgeSourceId], references: [id])
+  business        Business        @relation(fields: [businessId], references: [id])
+
+  @@map("knowledge_chunks")
+}

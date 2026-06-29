@@ -1,36 +1,38 @@
+import { defineTool } from "eve/tools";
 import { z } from "zod";
-import { defineTool } from "eve";
+import { db } from "../../src/lib/db";
+import { toPrismaJson } from "../../src/lib/json";
 
 export default defineTool({
-  description: "Record an agent run for analytics and audit trail.",
-  parameters: z.object({
-    businessId: z.string(),
+  description: "Record a HeySalad® agent run summary in Prisma for dashboards and quality review.",
+  inputSchema: z.object({
+    businessId: z.string().min(1),
+    locationId: z.string().min(1).optional(),
+    conversationId: z.string().min(1).optional(),
     agentType: z.enum(["HOST", "KNOWLEDGE", "SALES", "OPERATIONS", "COMPLIANCE"]),
-    conversationId: z.string().optional(),
-    intent: z.string(),
-    sentiment: z.enum(["positive", "neutral", "negative"]),
-    escalated: z.boolean(),
-    summary: z.string(),
+    model: z.string().min(1).optional(),
+    status: z.enum(["COMPLETED", "FAILED"]).default("COMPLETED"),
+    input: z.unknown().optional(),
+    output: z.unknown().optional(),
+    toolCalls: z.unknown().optional(),
+    error: z.string().optional(),
   }),
-  async execute(params) {
-    const baseUrl = process.env.HEYSALAD_API_URL;
-    if (!baseUrl) {
-      return { error: "HEYSALAD_API_URL not configured" };
-    }
-
-    const res = await fetch(`${baseUrl}/api/agent/runs`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.HEYSALAD_API_KEY}`,
-        "Content-Type": "application/json",
+  async execute(input) {
+    const run = await db.agentRun.create({
+      data: {
+        businessId: input.businessId,
+        locationId: input.locationId,
+        conversationId: input.conversationId,
+        agentType: input.agentType,
+        model: input.model || process.env.HEYSALAD_AI_MODEL || "openai/gpt-5.4-mini",
+        status: input.status,
+        inputJson: input.input === undefined ? undefined : toPrismaJson(input.input),
+        outputJson: input.output === undefined ? undefined : toPrismaJson(input.output),
+        toolCallsJson: input.toolCalls === undefined ? undefined : toPrismaJson(input.toolCalls),
+        error: input.error,
       },
-      body: JSON.stringify(params),
     });
 
-    if (!res.ok) {
-      return { error: `Failed to record run: ${res.status}` };
-    }
-
-    return { success: true };
+    return { ok: true, agentRunId: run.id };
   },
 });

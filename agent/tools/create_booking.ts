@@ -1,47 +1,60 @@
+import { defineTool } from "eve/tools";
 import { z } from "zod";
-import { defineTool } from "eve";
+import { db } from "../../src/lib/db";
 
 export default defineTool({
-  description:
-    "Create a booking for a customer. Only call when all required details are confirmed.",
-  parameters: z.object({
-    businessId: z.string(),
-    customerName: z.string(),
-    customerPhone: z.string(),
-    partySize: z.number().min(1),
-    date: z.string().describe("ISO date string, e.g. 2026-07-01"),
-    time: z.string().describe("24h time, e.g. 19:30"),
+  description: "Create a confirmed booking for a food business after caller details and booking time are clear.",
+  inputSchema: z.object({
+    businessId: z.string().min(1),
+    locationId: z.string().min(1).optional(),
+    conversationId: z.string().min(1).optional(),
+    customerName: z.string().min(1),
+    customerPhone: z.string().min(3),
+    customerEmail: z.string().email().optional(),
+    partySize: z.number().int().positive(),
+    bookingStartIso: z.string().datetime(),
     specialRequests: z.string().optional(),
-    conversationId: z.string().optional(),
   }),
-  async execute(params) {
-    const baseUrl = process.env.HEYSALAD_API_URL;
-    if (!baseUrl) {
-      return { error: "HEYSALAD_API_URL not configured" };
-    }
-
-    const res = await fetch(`${baseUrl}/api/bookings`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.HEYSALAD_API_KEY}`,
-        "Content-Type": "application/json",
+  async execute(input) {
+    let customer = await db.customer.findFirst({
+      where: {
+        businessId: input.businessId,
+        phone: input.customerPhone,
       },
-      body: JSON.stringify({
-        ...params,
-        source: "AI_AGENT",
-        status: "CONFIRMED",
-      }),
     });
 
-    if (!res.ok) {
-      return { error: `Failed to create booking: ${res.status}` };
+    if (!customer) {
+      customer = await db.customer.create({
+        data: {
+          businessId: input.businessId,
+          locationId: input.locationId,
+          name: input.customerName,
+          phone: input.customerPhone,
+          email: input.customerEmail,
+        },
+      });
     }
 
-    const booking = await res.json();
+    const booking = await db.booking.create({
+      data: {
+        businessId: input.businessId,
+        locationId: input.locationId,
+        conversationId: input.conversationId,
+        customerId: customer.id,
+        source: "AI_PHONE",
+        status: "CONFIRMED",
+        partySize: input.partySize,
+        bookingStart: new Date(input.bookingStartIso),
+        specialRequests: input.specialRequests,
+      },
+    });
+
     return {
-      success: true,
+      ok: true,
       bookingId: booking.id,
-      message: `Booking confirmed for ${params.customerName}, party of ${params.partySize} on ${params.date} at ${params.time}.`,
+      customerId: customer.id,
+      bookingStart: input.bookingStartIso,
+      status: booking.status,
     };
   },
 });

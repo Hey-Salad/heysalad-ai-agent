@@ -1,5 +1,9 @@
 import { NextRequest } from "next/server";
 
+/**
+ * Validate API key from Authorization header.
+ * Used to protect agent API routes.
+ */
 export function validateApiKey(request: NextRequest): boolean {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return false;

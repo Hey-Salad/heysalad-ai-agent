@@ -1,104 +1,192 @@
 # HeySalad AI Agent
 
-Open-source AI agent framework for food businesses. Built with [Eve](https://github.com/vercel/eve) (Vercel's agent framework) and the [Vercel AI SDK](https://sdk.vercel.ai).
+Open-source AI platform for food businesses. Built with [Next.js 16](https://nextjs.org), [Eve](https://github.com/vercel/eve) (Vercel's agent framework), [Vercel AI SDK](https://sdk.vercel.ai), and [Prisma](https://prisma.io).
+
+This is the OSS version of the [HeySalad AI Platform](https://heysalad.ai) — you can self-host it, extend it, or use it as a foundation for your own AI-powered food business tools.
+
+## What It Does
+
+An AI phone agent and business platform that helps restaurants, cafes, bakeries, grocers, and other food businesses:
+
+- **Answer calls** with an AI receptionist that knows your menu, hours, and policies
+- **Take bookings** automatically from phone or chat
+- **Handle FAQs** using a knowledge base you control
+- **Escalate safely** — allergies, complaints, and edge cases go to humans
+- **Track everything** — calls, bookings, tasks, agent performance
 
 ## Architecture
 
 ```
-heysalad-ai-agent (this repo — OSS agent service)
-    ↕ API calls
-heysalad-ai (private — SaaS platform at heysalad.ai)
-    ↕ Twilio / SMS / Web
-Customers calling restaurants, cafes, etc.
+┌───────────────────────────────────────────────────┐
+│              heysalad-ai-agent (this repo)        │
+│                                                   │
+│  Next.js 16 ─── Prisma/Postgres ─── Eve Agents   │
+│                                                   │
+│  ┌─────────────────────────────────────────────┐  │
+│  │            5 AI Agents                      │  │
+│  │  Host · Knowledge · Sales · Ops · Compliance│  │
+│  └─────────────────────────────────────────────┘  │
+│                                                   │
+│  ┌─────────────────────────────────────────────┐  │
+│  │         Integration Layer                   │  │
+│  │  Payments: Stripe / Airwallex / PayPal      │  │
+│  │  Voice:    Twilio / ElevenLabs / OpenAI     │  │
+│  │  Models:   OpenAI / HuggingFace / Azure     │  │
+│  │  Market:   CoralOS / Solana                 │  │
+│  └─────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────┘
 ```
-
-## Agents
-
-| Agent | Endpoint | Purpose |
-|-------|----------|---------|
-| **Host** | `POST /api/host` | AI receptionist — answers calls, takes bookings, handles FAQs |
-| **Knowledge** | `POST /api/knowledge` | Knowledge base management, gap detection, contradictions |
-| **Sales** | `POST /api/sales` | Lead research, prospect enrichment, outreach drafting |
-| **Operations** | `POST /api/operations` | Daily summaries, KPI tracking, unresolved work |
-| **Compliance** | `POST /api/compliance` | Transcript auditing, risky claim detection |
-| **Health** | `GET /api/health` | Health check |
 
 ## Quick Start
 
 ```bash
-# Clone
 git clone https://github.com/Hey-Salad/heysalad-ai-agent.git
 cd heysalad-ai-agent
-
-# Install
 npm install
-
-# Configure
 cp .env.example .env.local
-# Edit .env.local with your OpenAI key
-
-# Run
+# Add your OPENAI_API_KEY and DATABASE_URL to .env.local
+npm run db:push
+npm run db:seed    # Creates a demo restaurant with menu + FAQs
 npm run dev
 ```
 
-## API Usage
+Visit `http://localhost:3000` to see the platform.
+
+## API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/host` | POST | AI receptionist — process customer messages |
+| `/api/twilio/voice` | POST | Twilio webhook — handles inbound calls |
+| `/api/marketplace/demo` | POST | CoralOS + Solana marketplace demo |
+| `/api/health` | GET | Health check |
+
+### Example: Host Agent
 
 ```bash
-# Host agent — handle a customer message
 curl -X POST http://localhost:3000/api/host \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer YOUR_AGENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
+    "businessId": "YOUR_BUSINESS_ID",
     "businessName": "Green Bowl Kitchen",
     "businessType": "RESTAURANT",
     "knowledgeContext": "Open Mon-Sat 11am-10pm. Vegan menu available.",
     "greeting": "Hello! Thanks for calling Green Bowl Kitchen.",
     "customerMessage": "Do you have vegan options?"
   }'
+```
 
-# Compliance audit
-curl -X POST http://localhost:3000/api/compliance \
+## Project Structure
+
+```
+├── agent/                      # Eve agent definitions
+│   ├── agent.ts                # Root agent
+│   ├── instructions.md         # System prompt
+│   ├── subagents/              # Host, Knowledge, Sales, Ops, Compliance
+│   ├── tools/                  # create_booking, create_task, etc.
+│   └── skills/                 # Agent skill documents
+├── prisma/
+│   ├── schema.prisma           # Database schema (Postgres)
+│   └── seed.ts                 # Demo data seeder
+├── src/
+│   ├── app/
+│   │   ├── api/                # API routes
+│   │   │   ├── host/           # Host agent endpoint
+│   │   │   ├── twilio/voice/   # Twilio voice webhook
+│   │   │   ├── marketplace/    # CoralOS demo
+│   │   │   └── health/         # Health check
+│   │   └── page.tsx            # Landing page
+│   └── lib/
+│       ├── ai/
+│       │   ├── gateway.ts      # AI SDK wrapper with run logging
+│       │   └── agents/host.ts  # Host agent implementation
+│       ├── integrations/       # Sponsor integration framework
+│       │   ├── payments/       # Stripe, Airwallex, PayPal
+│       │   ├── voice/          # Twilio, ElevenLabs, OpenAI
+│       │   ├── models/         # OpenAI, HuggingFace, Azure
+│       │   ├── marketplace/    # CoralOS, Solana
+│       │   ├── openai/         # Responses API, Realtime, DALL-E
+│       │   └── fetchai/        # Fetch.ai agent bridge
+│       ├── db.ts               # Prisma client
+│       ├── auth.ts             # API key validation
+│       └── twilio.ts           # TwiML helpers
+```
+
+## Integrations
+
+All integrations are **feature-flagged** — enable only what you need:
+
+| Integration | Flag | What It Does |
+|-------------|------|-------------|
+| OpenAI Responses API | `HEYSALAD_OPENAI_RESPONSES` | New structured output API |
+| OpenAI Realtime | `HEYSALAD_OPENAI_REALTIME` | Voice mode for AI Terminal |
+| OpenAI Images | `HEYSALAD_OPENAI_IMAGES` | DALL-E image generation |
+| ElevenLabs | `HEYSALAD_ELEVENLABS_ENABLED` | Voice synthesis + STT |
+| Hugging Face | `HEYSALAD_HUGGINGFACE_ENABLED` | Open models (Mixtral, etc.) |
+| Azure OpenAI | `HEYSALAD_MICROSOFT_ENABLED` | Azure-hosted models |
+| Airwallex | `HEYSALAD_AIRWALLEX_ENABLED` | Global payments + FX |
+| PayPal | `HEYSALAD_PAYPAL_ENABLED` | Alternative payments |
+| CoralOS | `HEYSALAD_CORALOS_ENABLED` | Agent marketplace |
+| Solana | `HEYSALAD_SOLANA_ENABLED` | Devnet escrow + Solana Pay |
+| Fetch.ai | `HEYSALAD_FETCHAI_ENABLED` | Agent interop bridge |
+
+### Switching Providers
+
+```env
+# Payment provider: stripe (default), airwallex, or paypal
+HEYSALAD_PAYMENT_PROVIDER="stripe"
+
+# Voice provider: twilio (default), elevenlabs, or openai
+HEYSALAD_VOICE_PROVIDER="twilio"
+
+# Model provider: openai (default), huggingface, or azure
+HEYSALAD_MODEL_PROVIDER="openai"
+```
+
+## Marketplace Demo (CoralOS + Solana)
+
+The end-to-end supply chain demo:
+
+```
+Restaurant (Buyer Agent)
+    ↓ Stock check
+Stock Agent detects low inventory
+    ↓ Quote request
+Supplier Agents compete on price
+    ↓ Best quote accepted
+Solana Devnet escrow created
+    ↓ Supplier ships
+Buyer confirms delivery
+    ↓ Settlement released
+```
+
+```bash
+curl -X POST http://localhost:3000/api/marketplace/demo \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{
-    "businessName": "Green Bowl Kitchen",
-    "transcript": "Agent: Yes, all our dishes are 100% allergen-free!"
-  }'
+  -d '{"businessId": "YOUR_BUSINESS_ID"}'
 ```
 
-## Eve Agent Structure
+## Tech Stack
 
-```
-agent/
-  agent.ts              — Root agent definition
-  instructions.md       — System prompt
-  subagents/
-    host/               — Customer-facing receptionist
-    knowledge/          — Knowledge base management
-    sales/              — Lead research & outreach
-    operations/         — Operational summaries
-    compliance/         — Transcript auditing
-  tools/
-    get_business_context.ts
-    create_booking.ts
-    create_task.ts
-    record_agent_run.ts
-```
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router, React 19) |
+| Database | PostgreSQL via Prisma 7.8 (Neon recommended) |
+| AI | Vercel AI SDK + Eve agent framework |
+| Voice/SMS | Twilio |
+| Payments | Stripe (default) |
+| Language | TypeScript |
 
-## Integration with HeySalad Platform
+## Contributing
 
-The agent service is designed to be called by the [HeySalad AI Platform](https://heysalad.ai). The platform handles:
-- Twilio voice/SMS integration
-- Customer & business data (Prisma/PostgreSQL)
-- Dashboard UI
-- Auth & RBAC
-
-The agent service handles:
-- AI inference (via Vercel AI SDK)
-- Structured responses with Zod schemas
-- Tool execution (booking creation, task creation)
-- Multi-agent orchestration via Eve
+PRs welcome! See the integration framework in `src/lib/integrations/` for how to add new providers.
 
 ## License
 
 MIT
+
+---
+
+Built by [HeySalad](https://heysalad.ai) — AI for food businesses.
