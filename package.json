@@ -1,0 +1,35 @@
+{
+  "name": "@heysalad/ai-agent",
+  "version": "0.1.0",
+  "description": "Open-source AI agent framework for food businesses",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hey-Salad/heysalad-ai-agent.git"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "ai": "^7.0.0",
+    "@ai-sdk/openai": "^3.0.0",
+    "@ai-sdk/anthropic": "^1.0.0",
+    "@ai-sdk/gateway": "^3.0.0",
+    "zod": "^3.25.0",
+    "eve": "^0.13.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0"
+  }
+}
