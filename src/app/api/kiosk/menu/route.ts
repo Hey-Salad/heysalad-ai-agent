@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
 import { KIOSK_CONFIG, KIOSK_SALADS } from "@kiosk/catalog";
 

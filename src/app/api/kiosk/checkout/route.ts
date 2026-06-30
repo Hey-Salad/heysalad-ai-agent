@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { getSaladById, KIOSK_CONFIG } from "@kiosk/catalog";
 import { getPaymentProvider } from "@/lib/integrations/payments";

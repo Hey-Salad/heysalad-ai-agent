@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { buildKioskKnowledgeContext, KIOSK_CONFIG } from "@kiosk/catalog";
 import { runHostAgent } from "@/lib/ai/agents/host";
