@@ -4,7 +4,7 @@ import { paypalProvider } from "./paypal";
 import { stripeProvider } from "./stripe-provider";
 
 export function getPaymentProvider(preferred?: string): PaymentProvider {
-  const provider = preferred || process.env.HEYSALAD_PAYMENT_PROVIDER || "stripe";
+  const provider = (preferred || process.env.HEYSALAD_PAYMENT_PROVIDER || "airwallex").trim();
 
   switch (provider) {
     case "airwallex":

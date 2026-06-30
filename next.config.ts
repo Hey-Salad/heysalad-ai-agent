@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(import.meta.dirname),
   },
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "raw.githubusercontent.com" },
+    ],
+  },
 };
 
 let exported: NextConfig | ReturnType<typeof import("eve/next").withEve> = nextConfig;
