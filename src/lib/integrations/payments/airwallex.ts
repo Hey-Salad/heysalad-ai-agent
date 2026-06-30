@@ -64,11 +64,22 @@ export const airwallexProvider: PaymentProvider = {
       }),
     });
 
-    if (!res.ok) throw new Error(`Airwallex checkout failed: ${res.status}`);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Airwallex payment intent failed (${res.status}): ${errText}`);
+    }
     const data = await res.json();
 
+    // Build the Airwallex hosted payment page URL
+    const env = BASE_URL.includes("demo") ? "demo" : "prod";
+    const checkoutUrl =
+      `https://checkout.airwallex.com/?intent_id=${data.id}` +
+      `&client_secret=${data.client_secret}` +
+      `&environment=${env}` +
+      (params.returnUrl ? `&successUrl=${encodeURIComponent(params.returnUrl)}` : "");
+
     return {
-      checkoutUrl: data.next_action?.url || params.returnUrl,
+      checkoutUrl,
       sessionId: data.id,
       provider: "airwallex",
     };
