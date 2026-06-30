@@ -13,10 +13,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const items = Array.isArray(body.items) ? (body.items as CheckoutItem[]) : [];
-    const providerName =
+    const providerName = (
       typeof body.provider === "string" && body.provider
         ? body.provider
-        : process.env.HEYSALAD_KIOSK_PAYMENT_PROVIDER || "airwallex";
+        : process.env.HEYSALAD_KIOSK_PAYMENT_PROVIDER || "airwallex"
+    ).trim();
 
     if (!items.length) {
       return NextResponse.json({ error: "At least one checkout item is required" }, { status: 400 });
