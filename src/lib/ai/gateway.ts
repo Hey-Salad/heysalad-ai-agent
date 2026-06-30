@@ -1,7 +1,7 @@
 import { generateText, generateObject, type LanguageModelUsage } from "ai";
 import { z } from "zod";
 import { db } from "../db";
-import { AgentType } from "@/generated/prisma/client";
+import { AgentType, Prisma } from "@/generated/prisma/client";
 
 const DEFAULT_MODEL = "openai/gpt-4o";
 
@@ -127,7 +127,7 @@ export async function runAgentWithTools<T extends z.ZodType>(
       where: { id: agentRun.id },
       data: {
         status: "COMPLETED",
-        outputJson: result.object as Record<string, unknown>,
+        outputJson: result.object as Prisma.InputJsonValue,
         tokenUsageJson: serializeUsage(result.usage),
         latencyMs: Date.now() - startTime,
       },

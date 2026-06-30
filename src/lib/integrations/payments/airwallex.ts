@@ -6,15 +6,27 @@ import type {
   RefundResult,
 } from "../types";
 
-const BASE_URL = process.env.AIRWALLEX_API_URL || "https://api-demo.airwallex.com/api/v1";
+const BASE_URL = process.env.AIRWALLEX_API_URL || "https://api.airwallex.com/api/v1";
+
+function getAirwallexCredentials() {
+  const clientId = process.env.AIRWALLEX_CLIENT_ID;
+  const apiKey = process.env.AIRWALLEX_API_KEY;
+
+  if (!clientId || !apiKey) {
+    throw new Error("AIRWALLEX_CLIENT_ID and AIRWALLEX_API_KEY must be configured");
+  }
+
+  return { clientId, apiKey };
+}
 
 async function getAuthToken(): Promise<string> {
+  const { clientId, apiKey } = getAirwallexCredentials();
   const res = await fetch(`${BASE_URL}/authentication/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-client-id": process.env.AIRWALLEX_CLIENT_ID!,
-      "x-api-key": process.env.AIRWALLEX_API_KEY!,
+      "x-client-id": clientId,
+      "x-api-key": apiKey,
     },
   });
   if (!res.ok) throw new Error(`Airwallex auth failed: ${res.status}`);
@@ -38,16 +50,17 @@ export const airwallexProvider: PaymentProvider = {
   name: "airwallex",
 
   async createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
-    // Create a payment intent
+    const currency = params.currency.toUpperCase();
+    const requestId = crypto.randomUUID();
     const res = await airwallexFetch("/pa/payment_intents/create", {
       method: "POST",
       body: JSON.stringify({
         amount: params.amount,
-        currency: params.currency,
+        currency,
         merchant_order_id: params.metadata?.orderId,
         descriptor: params.description,
         return_url: params.returnUrl,
-        request_id: crypto.randomUUID(),
+        request_id: requestId,
       }),
     });
 
@@ -73,11 +86,12 @@ export const airwallexProvider: PaymentProvider = {
   },
 
   async refund(transactionId: string, amount?: number): Promise<RefundResult> {
+    const refundAmount = typeof amount === "number" ? Number(amount.toFixed(2)) : undefined;
     const res = await airwallexFetch(`/pa/refunds/create`, {
       method: "POST",
       body: JSON.stringify({
         payment_intent_id: transactionId,
-        amount,
+        amount: refundAmount,
         request_id: crypto.randomUUID(),
         reason: "requested_by_customer",
       }),

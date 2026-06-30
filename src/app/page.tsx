@@ -7,6 +7,25 @@ export default function Home() {
       </p>
 
       <section className="mb-10">
+        <div className="border rounded-2xl p-6 bg-gradient-to-br from-emerald-50 via-white to-sky-50 dark:border-gray-800 dark:from-gray-950 dark:via-gray-950 dark:to-gray-900">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold mb-2">Kiosk slice</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xl">
+                A new `/kiosk` surface now plugs the host agent into a public salad ordering flow and starts checkout through the payment provider abstraction.
+              </p>
+            </div>
+            <a
+              href="/kiosk"
+              className="inline-flex items-center rounded-full bg-gray-950 px-5 py-3 text-sm font-semibold text-white dark:bg-white dark:text-gray-950"
+            >
+              Open kiosk
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className="mb-10">
         <h2 className="text-2xl font-semibold mb-4">AI Agents</h2>
         <div className="grid gap-3">
           {[

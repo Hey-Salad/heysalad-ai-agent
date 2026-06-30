@@ -1,4 +1,7 @@
 import { isEnabled, type PaymentProvider } from "../types";
+import { airwallexProvider } from "./airwallex";
+import { paypalProvider } from "./paypal";
+import { stripeProvider } from "./stripe-provider";
 
 export function getPaymentProvider(preferred?: string): PaymentProvider {
   const provider = preferred || process.env.HEYSALAD_PAYMENT_PROVIDER || "stripe";
@@ -8,19 +11,16 @@ export function getPaymentProvider(preferred?: string): PaymentProvider {
       if (!isEnabled("HEYSALAD_AIRWALLEX_ENABLED")) {
         throw new Error("Airwallex integration is not enabled");
       }
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require("./airwallex").airwallexProvider;
+      return airwallexProvider;
 
     case "paypal":
       if (!isEnabled("HEYSALAD_PAYPAL_ENABLED")) {
         throw new Error("PayPal integration is not enabled");
       }
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require("./paypal").paypalProvider;
+      return paypalProvider;
 
     case "stripe":
     default:
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      return require("./stripe-provider").stripeProvider;
+      return stripeProvider;
   }
 }
