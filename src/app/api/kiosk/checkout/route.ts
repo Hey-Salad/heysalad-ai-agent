@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const total = orderItems.reduce((sum, entry) => sum + entry.salad.price * entry.quantity, 0);
     const itemCount = orderItems.reduce((sum, entry) => sum + entry.quantity, 0);
     const orderId = `kiosk_${Date.now()}`;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}` || "https://kiosk-beta.heysalad.ai";
 
     const paymentProvider = getPaymentProvider(providerName);
     const checkout = await paymentProvider.createCheckout({
