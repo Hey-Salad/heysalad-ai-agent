@@ -79,7 +79,7 @@ export function getSaladById(id: string) {
 export function buildKioskKnowledgeContext() {
   const menuLines = KIOSK_SALADS.map((salad) => {
     return [
-      `${salad.name} - GBP ${salad.price.toFixed(2)}`,
+      `${salad.name} - USD ${salad.price.toFixed(2)}`,
       `Calories: ${salad.calories}, Protein: ${salad.protein}g`,
       `Dietary tags: ${salad.dietary.join(", ")}`,
       `Ingredients: ${salad.ingredients.join(", ")}`,

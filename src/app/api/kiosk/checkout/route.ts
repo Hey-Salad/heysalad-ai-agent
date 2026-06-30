@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const paymentProvider = getPaymentProvider(providerName);
     const checkout = await paymentProvider.createCheckout({
       amount: Number(total.toFixed(2)),
-      currency: "GBP",
+      currency: "USD",
       description: `${KIOSK_CONFIG.name} order`,
       metadata: {
         orderId,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       orderId,
       itemCount,
       total: Number(total.toFixed(2)),
-      currency: "GBP",
+      currency: "USD",
       provider: checkout.provider,
       checkoutUrl: checkout.checkoutUrl,
       sessionId: checkout.sessionId

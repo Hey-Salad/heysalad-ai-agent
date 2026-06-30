@@ -16,7 +16,7 @@ type Props = {
   paymentProvider: string;
 };
 
-const gbp = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
 // ── Dietary tag colours ───────────────────────────────────────────────────────
 const tagColour: Record<string, { bg: string; text: string }> = {
@@ -167,7 +167,7 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                   <div style={{ padding: "14px 16px 16px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                       <h2 style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 15, fontWeight: 700, color: "#1f1416", lineHeight: 1.3, flex: 1 }}>{salad.name}</h2>
-                      <span style={{ fontWeight: 700, color: "#ed4c4c", fontSize: 16, marginLeft: 10, whiteSpace: "nowrap" }}>{gbp.format(salad.price)}</span>
+                      <span style={{ fontWeight: 700, color: "#ed4c4c", fontSize: 16, marginLeft: 10, whiteSpace: "nowrap" }}>{usd.format(salad.price)}</span>
                     </div>
                     <p style={{ margin: "0 0 4px", fontSize: 13, color: "#7a6e70", lineHeight: 1.5 }}>{salad.description}</p>
                     <p style={{ margin: "0 0 14px", fontSize: 11, color: "#b7adae" }}>{salad.calories} kcal · {salad.protein}g protein</p>
@@ -210,9 +210,9 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                 <div key={e.salad.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "9px 12px" }}>
                   <div>
                     <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{e.salad.name}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: "#b7adae" }}>{e.quantity} × {gbp.format(e.salad.price)}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: "#b7adae" }}>{e.quantity} × {usd.format(e.salad.price)}</p>
                   </div>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{gbp.format(e.salad.price * e.quantity)}</span>
+                  <span style={{ fontWeight: 700, fontSize: 14 }}>{usd.format(e.salad.price * e.quantity)}</span>
                 </div>
               )) : (
                 <div style={{ textAlign: "center", color: "#7a6e70", fontSize: 13, padding: "14px 0", border: "1px dashed rgba(255,255,255,0.12)", borderRadius: 10 }}>
@@ -223,7 +223,7 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
               <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.14em", color: "#b7adae", alignSelf: "center" }}>Total</span>
-              <span style={{ fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 24, fontWeight: 800 }}>{gbp.format(total)}</span>
+              <span style={{ fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 24, fontWeight: 800 }}>{usd.format(total)}</span>
             </div>
 
             <button
@@ -240,7 +240,7 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                 transition: "background 0.12s ease",
               }}
             >
-              {checkoutBusy ? "Starting checkout…" : `Pay now — ${gbp.format(total)}`}
+              {checkoutBusy ? "Starting checkout…" : `Pay now — ${usd.format(total)}`}
             </button>
 
             {status && (
