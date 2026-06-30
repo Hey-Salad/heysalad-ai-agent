@@ -20,7 +20,12 @@ export function getPaymentProvider(preferred?: string): PaymentProvider {
       return paypalProvider;
 
     case "stripe":
-    default:
+      if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error("STRIPE_SECRET_KEY is not configured — add it to your environment variables or switch to a different payment provider");
+      }
       return stripeProvider;
+
+    default:
+      throw new Error(`Unknown payment provider: "${provider}". Valid options: airwallex, paypal, stripe`);
   }
 }

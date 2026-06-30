@@ -1,19 +1,62 @@
 @import "tailwindcss";
 
+/* ── HeySalad Design System tokens ───────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Brand primitives */
+  --cherry-red:        #ed4c4c;
+  --cherry-red-hover:  #d83f3f;
+  --cherry-red-press:  #c23636;
+  --cherry-red-soft:   #fbe4e4;
+  --peach:             #faa09a;
+  --light-peach:       #ffd0cd;
+  --cream:             #fff8f6;
+  --white:             #ffffff;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Neutrals */
+  --ink-900:   #1f1416;
+  --ink-700:   #4a3f41;
+  --ink-500:   #7a6e70;
+  --ink-300:   #b7adae;
+  --line-200:  #ece5e5;
+  --line-100:  #f6f1f1;
+
+  /* Semantic aliases */
+  --brand:           var(--cherry-red);
+  --brand-hover:     var(--cherry-red-hover);
+  --brand-press:     var(--cherry-red-press);
+  --text-strong:     var(--ink-900);
+  --text-body:       var(--ink-700);
+  --text-muted:      var(--ink-500);
+  --text-disabled:   var(--ink-300);
+  --text-on-brand:   var(--white);
+  --border:          var(--line-200);
+  --bg-warm:         var(--cream);
+  --surface-card:    var(--white);
+  --surface-muted:   var(--line-100);
+
+  /* Shadows */
+  --shadow-card:  0 4px 24px rgba(31, 20, 22, 0.07);
+  --shadow-brand: 0 4px 16px rgba(237, 76, 76, 0.28);
+
+  /* Radius */
+  --radius-pill: 999px;
+  --radius-card: 16px;
+  --radius-input: 12px;
+
+  /* Typography */
+  --font-display: "Grandstander", system-ui, sans-serif;
+  --font-body:    "Figtree", system-ui, sans-serif;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Motion */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--text-body);
+  background: var(--bg-warm);
+  font-family: var(--font-body);
 }
