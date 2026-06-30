@@ -27,7 +27,7 @@ const tagColour: Record<string, { bg: string; text: string }> = {
   "high-protein": { bg: "#fef2f2", text: "#dc2626" },
 };
 
-// ── Salad accent gradients ────────────────────────────────────────────────────
+// ── Salad gradient fallbacks ──────────────────────────────────────────────────
 const saladGradients = [
   "linear-gradient(135deg,#ffd0cd 0%,#faa09a 100%)",
   "linear-gradient(135deg,#fbe4e4 0%,#ffd0cd 100%)",
@@ -154,13 +154,44 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                   overflow: "hidden", boxShadow: "0 2px 12px rgba(31,20,22,0.05)",
                   transition: "box-shadow 0.15s ease", display: "flex", flexDirection: "column",
                 }}>
-                  {/* Colour band */}
-                  <div className="kiosk-card-band" style={{ height: 65, background: gradient, position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", padding: "10px 12px", flexShrink: 0 }}>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  {/* Photo band (with gradient fallback) */}
+                  <div className="kiosk-card-band" style={{
+                    height: 65, position: "relative", display: "flex",
+                    alignItems: "flex-start", justifyContent: "flex-end",
+                    padding: "10px 12px", flexShrink: 0,
+                    overflow: "hidden",
+                  }}>
+                    {/* Photo image */}
+                    {salad.image && (
+                      <Image
+                        src={salad.image}
+                        alt={salad.name}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        style={{ objectFit: "cover", zIndex: 0 }}
+                        unoptimized
+                      />
+                    )}
+                    {/* Gradient overlay for readability */}
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      background: "linear-gradient(135deg, rgba(31,20,22,0.15) 0%, rgba(31,20,22,0.02) 60%, rgba(31,20,22,0.25) 100%)",
+                      zIndex: 1,
+                    }} />
+                    {!salad.image && (
+                      <div style={{ position: "absolute", inset: 0, background: gradient, zIndex: 0 }} />
+                    )}
+                    {/* Dietary tags (on top of overlay) */}
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end", position: "relative", zIndex: 2 }}>
                       {salad.dietary.map(tag => {
                         const c = tagColour[tag] ?? { bg: "#f6f1f1", text: "#4a3f41" };
                         return (
-                          <span key={tag} style={{ background: c.bg, color: c.text, borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 600 }}>{tag}</span>
+                          <span key={tag} style={{
+                            background: c.bg, color: c.text,
+                            borderRadius: 999, padding: "2px 8px",
+                            fontSize: 10, fontWeight: 600,
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                          }}>{tag}</span>
                         );
                       })}
                     </div>
@@ -455,6 +486,14 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
           .kiosk-grid {
             grid-template-columns: 1fr 420px !important;
           }
+        }
+
+        /* ── Card band image animation ── */
+        .kiosk-card-band img {
+          transition: transform 0.4s ease;
+        }
+        article:hover .kiosk-card-band img {
+          transform: scale(1.05);
         }
       `}</style>
     </div>

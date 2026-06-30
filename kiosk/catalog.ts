@@ -8,6 +8,7 @@ export type KioskSalad = {
   accent: string;
   description: string;
   ingredients: string[];
+  image: string;
 };
 
 export const KIOSK_CONFIG = {
@@ -35,7 +36,8 @@ export const KIOSK_SALADS: KioskSalad[] = [
     dietary: ["vegan", "gluten-free"],
     accent: "from-amber-300 via-orange-300 to-pink-300",
     description: "A bright all-rounder with quinoa, sweet potato, edamame, and tahini.",
-    ingredients: ["quinoa", "sweet potato", "purple cabbage", "edamame", "tahini dressing"]
+    ingredients: ["quinoa", "sweet potato", "purple cabbage", "edamame", "tahini dressing"],
+    image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&h=300&fit=crop&auto=format"
   },
   {
     id: "mediterranean-power",
@@ -46,7 +48,8 @@ export const KIOSK_SALADS: KioskSalad[] = [
     dietary: ["vegetarian", "gluten-free"],
     accent: "from-lime-300 via-emerald-300 to-teal-300",
     description: "A sharp, salty bowl built around chickpeas, tomatoes, and olives.",
-    ingredients: ["spinach", "chickpeas", "cherry tomatoes", "olives", "lemon-herb vinaigrette"]
+    ingredients: ["spinach", "chickpeas", "cherry tomatoes", "olives", "lemon-herb vinaigrette"],
+    image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=600&h=300&fit=crop&auto=format"
   },
   {
     id: "green-goddess",
@@ -57,7 +60,8 @@ export const KIOSK_SALADS: KioskSalad[] = [
     dietary: ["vegan", "raw"],
     accent: "from-emerald-300 via-green-300 to-lime-200",
     description: "The cleanest option on the board with kale, avocado, and hemp seeds.",
-    ingredients: ["kale", "avocado", "broccoli", "hemp seeds", "green goddess dressing"]
+    ingredients: ["kale", "avocado", "broccoli", "hemp seeds", "green goddess dressing"],
+    image: "https://images.unsplash.com/photo-1506354666786-959d6d497f1a?w=600&h=300&fit=crop&auto=format"
   },
   {
     id: "protein-paradise",
@@ -68,7 +72,8 @@ export const KIOSK_SALADS: KioskSalad[] = [
     dietary: ["gluten-free", "high-protein"],
     accent: "from-rose-300 via-red-300 to-orange-300",
     description: "The training-day bowl with grilled chicken, quinoa, and roasted vegetables.",
-    ingredients: ["grilled chicken", "quinoa", "roasted vegetables", "turmeric-ginger dressing"]
+    ingredients: ["grilled chicken", "quinoa", "roasted vegetables", "turmeric-ginger dressing"],
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=300&fit=crop&auto=format"
   }
 ];
 
