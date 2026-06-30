@@ -59,7 +59,6 @@ export const airwallexProvider: PaymentProvider = {
         currency,
         merchant_order_id: params.metadata?.orderId,
         descriptor: params.description,
-        return_url: params.returnUrl,
         request_id: requestId,
       }),
     });
