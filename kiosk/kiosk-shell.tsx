@@ -99,29 +99,30 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
 
       {/* ── Top bar ── */}
       <header style={{
-        height: 60, background: "#fff", borderBottom: "1px solid #ece5e5",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 28px", position: "sticky", top: 0, zIndex: 10,
-        boxShadow: "0 1px 4px rgba(31,20,22,0.05)",
+        minHeight: 56, background: "#fff", borderBottom: "1px solid #ece5e5",
+        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap",
+        padding: "10px 16px", position: "sticky", top: 0, zIndex: 10,
+        boxShadow: "0 1px 4px rgba(31,20,22,0.05)", gap: 8,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <Image
             src="https://raw.githubusercontent.com/Hey-Salad/.github/main/HeySalad%20Logo%20Black.svg"
             alt="HeySalad"
-            width={120} height={32}
+            width={100} height={28}
             style={{ objectFit: "contain" }}
             unoptimized
+            className="kiosk-logo"
           />
           <span style={{ width: 1, height: 24, background: "#ece5e5" }} />
           <span style={{
             background: "#fbe4e4", color: "#ed4c4c",
-            borderRadius: 999, padding: "3px 12px", fontSize: 12, fontWeight: 700,
+            borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 700,
           }}>
             Kiosk
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 13, color: "#7a6e70", fontWeight: 500 }}>{location}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span className="kiosk-location" style={{ fontSize: 12, color: "#7a6e70", fontWeight: 500 }}>{location}</span>
           <span style={{
             background: "#f6f1f1", color: "#4a3f41",
             borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 600,
@@ -132,44 +133,45 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
       </header>
 
       {/* ── Main ── */}
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "24px 24px 48px", display: "grid", gridTemplateColumns: "1fr 380px", gap: 20, alignItems: "start" }}>
+      <div className="kiosk-grid" style={{ maxWidth: 1320, margin: "0 auto", padding: "24px 16px 48px", display: "grid", gap: 20, alignItems: "start" }}>
 
         {/* ── Left: Menu ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <div style={{ marginBottom: 16 }}>
-            <p style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#b7adae" }}>Today&apos;s menu</p>
-            <h1 style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 28, fontWeight: 800, color: "#1f1416", letterSpacing: "-0.02em" }}>
+            <p className="kiosk-subtitle" style={{ margin: "0 0 2px", fontSize: 11, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "#b7adae" }}>Today&apos;s menu</p>
+            <h1 className="kiosk-title" style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 28, fontWeight: 800, color: "#1f1416", letterSpacing: "-0.02em" }}>
               Choose your bowl
             </h1>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="kiosk-card-grid" style={{ display: "grid", gridTemplateColumns: "1fr", gap: 14 }}>
             {salads.map((salad, i) => {
               const qty = basket.find(b => b.saladId === salad.id)?.quantity ?? 0;
+              const gradient = saladGradients[i % saladGradients.length];
               return (
                 <article key={salad.id} style={{
-                  background: "#fff", borderRadius: 16, border: "1px solid #ece5e5",
+                  background: "#fff", borderRadius: 12, border: "1px solid #ece5e5",
                   overflow: "hidden", boxShadow: "0 2px 12px rgba(31,20,22,0.05)",
-                  transition: "box-shadow 0.15s ease",
+                  transition: "box-shadow 0.15s ease", display: "flex", flexDirection: "column",
                 }}>
                   {/* Colour band */}
-                  <div style={{ height: 100, background: saladGradients[i % saladGradients.length], position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", padding: 10 }}>
+                  <div className="kiosk-card-band" style={{ height: 65, background: gradient, position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", padding: "10px 12px", flexShrink: 0 }}>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
                       {salad.dietary.map(tag => {
                         const c = tagColour[tag] ?? { bg: "#f6f1f1", text: "#4a3f41" };
                         return (
-                          <span key={tag} style={{ background: c.bg, color: c.text, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>{tag}</span>
+                          <span key={tag} style={{ background: c.bg, color: c.text, borderRadius: 999, padding: "2px 8px", fontSize: 10, fontWeight: 600 }}>{tag}</span>
                         );
                       })}
                     </div>
                   </div>
 
-                  <div style={{ padding: "14px 16px 16px" }}>
+                  <div style={{ padding: "14px 14px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                      <h2 style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 15, fontWeight: 700, color: "#1f1416", lineHeight: 1.3, flex: 1 }}>{salad.name}</h2>
-                      <span style={{ fontWeight: 700, color: "#ed4c4c", fontSize: 16, marginLeft: 10, whiteSpace: "nowrap" }}>{usd.format(salad.price)}</span>
+                      <h2 className="kiosk-card-name" style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 15, fontWeight: 700, color: "#1f1416", lineHeight: 1.3, flex: 1 }}>{salad.name}</h2>
+                      <span className="kiosk-card-price" style={{ fontWeight: 700, color: "#ed4c4c", fontSize: 14, marginLeft: 10, whiteSpace: "nowrap" }}>{usd.format(salad.price)}</span>
                     </div>
-                    <p style={{ margin: "0 0 4px", fontSize: 13, color: "#7a6e70", lineHeight: 1.5 }}>{salad.description}</p>
+                    <p className="kiosk-card-desc" style={{ margin: "0 0 4px", fontSize: 13, color: "#7a6e70", lineHeight: 1.5 }}>{salad.description}</p>
                     <p style={{ margin: "0 0 14px", fontSize: 11, color: "#b7adae" }}>{salad.calories} kcal · {salad.protein}g protein</p>
 
                     {qty === 0 ? (
@@ -179,13 +181,14 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                         fontSize: 14, fontWeight: 700, cursor: "pointer",
                         fontFamily: "inherit",
                         boxShadow: "0 4px 12px rgba(237,76,76,0.28)",
+                        minHeight: 44,
                       }}>
                         Add to order
                       </button>
                     ) : (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                         <button onClick={() => rem(salad.id)} style={qtyBtn}>−</button>
-                        <span style={{ fontWeight: 700, fontSize: 18, color: "#1f1416", minWidth: 28, textAlign: "center" }}>{qty}</span>
+                        <span className="kiosk-qty" style={{ fontWeight: 700, fontSize: 16, color: "#1f1416", minWidth: 28, textAlign: "center" }}>{qty}</span>
                         <button onClick={() => add(salad.id)} style={{ ...qtyBtn, background: "#ed4c4c", color: "#fff", border: "1.5px solid #ed4c4c" }}>+</button>
                       </div>
                     )}
@@ -197,7 +200,7 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
         </div>
 
         {/* ── Right: Basket + Sal ── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 80 }}>
+        <div className="kiosk-sidebar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* Basket card */}
           <div style={{ background: "#1f1416", borderRadius: 16, padding: 22, color: "#fff", boxShadow: "0 4px 24px rgba(31,20,22,0.18)" }}>
@@ -212,7 +215,10 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                     <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{e.salad.name}</p>
                     <p style={{ margin: 0, fontSize: 11, color: "#b7adae" }}>{e.quantity} × {usd.format(e.salad.price)}</p>
                   </div>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{usd.format(e.salad.price * e.quantity)}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{usd.format(e.salad.price * e.quantity)}</span>
+                    <button onClick={() => rem(e.salad.id)} className="kiosk-basket-remove" style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fca5a5", borderRadius: "50%", width: 26, height: 26, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 700, flexShrink: 0 }}>×</button>
+                  </div>
                 </div>
               )) : (
                 <div style={{ textAlign: "center", color: "#7a6e70", fontSize: 13, padding: "14px 0", border: "1px dashed rgba(255,255,255,0.12)", borderRadius: 10 }}>
@@ -233,14 +239,17 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                 marginTop: 14, width: "100%", padding: "14px 0", borderRadius: 999, border: "none",
                 background: basketItems.length ? "#ed4c4c" : "rgba(255,255,255,0.08)",
                 color: basketItems.length ? "#fff" : "#7a6e70",
-                fontSize: 15, fontWeight: 700,
+                fontSize: 16, fontWeight: 700,
                 cursor: basketItems.length && !checkoutBusy ? "pointer" : "not-allowed",
                 boxShadow: basketItems.length ? "0 4px 16px rgba(237,76,76,0.35)" : "none",
                 fontFamily: "inherit",
                 transition: "background 0.12s ease",
+                minHeight: 48,
               }}
             >
-              {checkoutBusy ? "Starting checkout…" : `Pay now — ${usd.format(total)}`}
+              <span className="kiosk-pay-text">
+                {checkoutBusy ? "Starting checkout…" : `Pay now — ${usd.format(total)}`}
+              </span>
             </button>
 
             {status && (
@@ -264,7 +273,7 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                 />
               </div>
               <div>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#1f1416" }}>Ask Sal</p>
+                <p className="kiosk-sal-title" style={{ margin: 0, fontWeight: 700, fontSize: 14, color: "#1f1416" }}>Ask Sal</p>
                 <p style={{ margin: 0, fontSize: 11, color: "#b7adae" }}>Your salad guide · AI powered</p>
               </div>
             </div>
@@ -299,8 +308,8 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
               {quickPrompts.map(p => (
                 <button key={p} onClick={() => void askSal(p)} style={{
                   background: "#fbe4e4", color: "#ed4c4c", border: "none",
-                  borderRadius: 999, padding: "5px 11px", fontSize: 11, fontWeight: 600,
-                  cursor: "pointer", fontFamily: "inherit",
+                  borderRadius: 999, padding: "6px 12px", fontSize: 11, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", minHeight: 32,
                 }}>
                   {p}
                 </button>
@@ -314,9 +323,9 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
                 onChange={e => setQuestion(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && void askSal(question)}
                 placeholder="Ask about ingredients, calories…"
-                style={{
-                  flex: 1, padding: "9px 12px", borderRadius: 12,
-                  border: "1.5px solid #ece5e5", fontSize: 13,
+                className="kiosk-sal-input" style={{
+                  flex: 1, padding: "12px", borderRadius: 12,
+                  border: "1.5px solid #ece5e5", fontSize: 16,
                   fontFamily: "inherit", outline: "none",
                   background: "#fff8f6", color: "#1f1416",
                 }}
@@ -324,12 +333,13 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
               <button
                 onClick={() => void askSal(question)}
                 disabled={assistantBusy || !question.trim()}
-                style={{
-                  padding: "9px 14px", borderRadius: 999,
+                className="kiosk-sal-send" style={{
+                  padding: "12px 20px", borderRadius: 999,
                   background: "#ed4c4c", color: "#fff", border: "none",
-                  fontSize: 13, fontWeight: 700, cursor: "pointer",
+                  fontSize: 16, fontWeight: 700, cursor: "pointer",
                   fontFamily: "inherit", opacity: assistantBusy ? 0.6 : 1,
                   boxShadow: "0 2px 8px rgba(237,76,76,0.25)",
+                  minWidth: 44, minHeight: 44, flexShrink: 0,
                 }}
               >
                 {assistantBusy ? "…" : "Ask"}
@@ -345,9 +355,107 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
       </footer>
 
       <style>{`
+        /* ── Animations ── */
         @keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+        /* ── Base interactive ── */
         button:hover:not(:disabled) { filter: brightness(0.96); }
+        button:active:not(:disabled) { transform: scale(0.97); }
         article:hover { box-shadow: 0 6px 24px rgba(31,20,22,0.1) !important; }
+
+        /* ══════════════════════════════════════════════════════════════
+           RESPONSIVE — Mobile-first defaults (≤ 479px)
+           ══════════════════════════════════════════════════════════════ */
+        .kiosk-grid {
+          grid-template-columns: 1fr !important;
+          padding: 16px 12px 32px !important;
+        }
+        .kiosk-sidebar {
+          position: static; top: auto;
+        }
+        .kiosk-subtitle { font-size: 10px !important; }
+        .kiosk-title { font-size: 22px !important; }
+        .kiosk-card-grid {
+          grid-template-columns: 1fr !important;
+          gap: 10px !important;
+        }
+        .kiosk-card-band { height: 65px !important; }
+        .kiosk-card-price { font-size: 14px !important; }
+        .kiosk-qty { font-size: 16px !important; }
+        .kiosk-basket-remove { display: flex !important; }
+        .kiosk-sal-input { font-size: 16px !important; padding: 12px !important; }
+        .kiosk-sal-send { padding: 12px 20px !important; font-size: 16px !important; }
+        .kiosk-logo { width: 90px !important; height: 24px !important; }
+
+        /* ═══════════════════════════════════
+           Tiny phones (≤ 374px)
+           ═══════════════════════════════════ */
+        @media (max-width: 374px) {
+          .kiosk-title { font-size: 18px !important; }
+          .kiosk-card-band { height: 55px !important; }
+          .kiosk-card-name { font-size: 13px !important; }
+          .kiosk-logo { width: 75px !important; height: 20px !important; }
+          .kiosk-location { font-size: 11px !important; }
+        }
+
+        /* ═══════════════════════════════════
+           Regular phones (≥ 480px)
+           ═══════════════════════════════════ */
+        @media (min-width: 480px) {
+          .kiosk-grid { padding: 20px 16px 40px !important; }
+          .kiosk-title { font-size: 25px !important; }
+          .kiosk-card-band { height: 80px !important; }
+          .kiosk-logo { width: 100px !important; height: 28px !important; }
+        }
+
+        /* ═══════════════════════════════════
+           Medium / small tablet (≥ 640px)
+           ═══════════════════════════════════ */
+        @media (min-width: 640px) {
+          .kiosk-grid { padding: 24px 20px 48px !important; }
+          .kiosk-card-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 12px !important;
+          }
+          .kiosk-card-band { height: 88px !important; }
+          .kiosk-title { font-size: 27px !important; }
+          .kiosk-card-name { font-size: 15px !important; }
+        }
+
+        /* ═══════════════════════════════════
+           Tablet-landscape / Desktop (≥ 1024px)
+           ═══════════════════════════════════ */
+        @media (min-width: 1024px) {
+          .kiosk-grid {
+            grid-template-columns: 1fr 380px !important;
+            padding: 24px 24px 48px !important;
+          }
+          .kiosk-card-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 14px !important;
+          }
+          .kiosk-sidebar {
+            position: sticky; top: 80px;
+          }
+          .kiosk-card-band { height: 100px !important; }
+          .kiosk-card-price { font-size: 16px !important; }
+          .kiosk-title { font-size: 28px !important; }
+          .kiosk-subtitle { font-size: 11px !important; }
+          .kiosk-qty { font-size: 18px !important; }
+          .kiosk-sal-input { font-size: 13px !important; padding: 9px 12px !important; }
+          .kiosk-sal-send { padding: 9px 14px !important; font-size: 13px !important; }
+          .kiosk-basket-remove { display: none !important; }
+          .kiosk-logo { width: 120px !important; height: 32px !important; }
+        }
+
+        /* ═══════════════════════════════════
+           Wide desktop (≥ 1400px)
+           ═══════════════════════════════════ */
+        @media (min-width: 1400px) {
+          .kiosk-grid {
+            grid-template-columns: 1fr 420px !important;
+          }
+        }
       `}</style>
     </div>
   );
