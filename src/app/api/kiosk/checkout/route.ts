@@ -38,30 +38,41 @@ export async function POST(request: NextRequest) {
     const total = orderItems.reduce((sum, entry) => sum + entry.salad.price * entry.quantity, 0);
     const itemCount = orderItems.reduce((sum, entry) => sum + entry.quantity, 0);
     const orderId = `kiosk_${Date.now()}`;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}` || "https://kiosk-beta.heysalad.ai";
+    const appUrl = (
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      "https://kiosk-beta.heysalad.ai"
+    ).trim();
+
+    const successUrl = `${appUrl}/?status=success&orderId=${orderId}`;
+    const cancelUrl = `${appUrl}/?status=cancelled&orderId=${orderId}`;
 
     const paymentProvider = getPaymentProvider(providerName);
     const checkout = await paymentProvider.createCheckout({
       amount: Number(total.toFixed(2)),
-      currency: "USD",
+      currency: "GBP",
       description: `${KIOSK_CONFIG.name} order`,
       metadata: {
         orderId,
         kioskSlug: KIOSK_CONFIG.slug,
-        itemCount: String(itemCount)
+        itemCount: String(itemCount),
       },
-      returnUrl: `${appUrl}/kiosk?status=success&orderId=${orderId}`,
-      cancelUrl: `${appUrl}/kiosk?status=cancelled&orderId=${orderId}`
+      returnUrl: successUrl,
+      cancelUrl,
     });
 
     return NextResponse.json({
       orderId,
       itemCount,
       total: Number(total.toFixed(2)),
-      currency: "USD",
+      currency: "GBP",
       provider: checkout.provider,
       checkoutUrl: checkout.checkoutUrl,
-      sessionId: checkout.sessionId
+      sessionId: checkout.sessionId,
+      intentId: checkout.intentId,
+      clientSecret: checkout.clientSecret,
+      successUrl,
+      cancelUrl,
     });
   } catch (error) {
     console.error("Kiosk checkout error:", error);

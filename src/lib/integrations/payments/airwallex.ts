@@ -52,6 +52,8 @@ export const airwallexProvider: PaymentProvider = {
   async createCheckout(params: CheckoutParams): Promise<CheckoutResult> {
     const currency = params.currency.toUpperCase();
     const requestId = crypto.randomUUID();
+    // Leave payment methods unrestricted so Airwallex can surface every
+    // activated method eligible for the transaction context.
     const res = await airwallexFetch("/pa/payment_intents/create", {
       method: "POST",
       body: JSON.stringify({
@@ -81,6 +83,8 @@ export const airwallexProvider: PaymentProvider = {
       checkoutUrl,
       sessionId: data.id,
       provider: "airwallex",
+      intentId: data.id,
+      clientSecret: data.client_secret,
     };
   },
 
