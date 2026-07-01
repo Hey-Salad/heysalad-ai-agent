@@ -22,6 +22,24 @@ type Props = {
 };
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const AIRWALLEX_DROPIN_MIN_HEIGHT = 560;
+
+function normalizePaymentProvider(value: string) {
+  const provider = value.trim().toLowerCase();
+  return provider || "airwallex";
+}
+
+function normalizeAirwallexEnv(value: string) {
+  return value.trim() === "demo" ? "demo" : "prod";
+}
+
+function normalizeAirwallexCheckoutMode(value: string) {
+  return value.trim() === "dropin" ? "dropin" : "hosted";
+}
+
+function normalizeCountryCode(value: string) {
+  return value.trim().toUpperCase() || "GB";
+}
 
 // ── Dietary tag colours ───────────────────────────────────────────────────────
 const tagColour: Record<string, { bg: string; text: string }> = {
@@ -49,6 +67,10 @@ export function KioskShell({
   airwallexCheckoutMode = "hosted",
   airwallexCountryCode = "GB",
 }: Props) {
+  const normalizedPaymentProvider = normalizePaymentProvider(paymentProvider);
+  const normalizedAirwallexEnv = normalizeAirwallexEnv(airwallexEnv);
+  const normalizedAirwallexCheckoutMode = normalizeAirwallexCheckoutMode(airwallexCheckoutMode);
+  const normalizedAirwallexCountryCode = normalizeCountryCode(airwallexCountryCode);
   const [basket, setBasket]             = useState<BasketEntry[]>([]);
   const [messages, setMessages]         = useState<AssistantMsg[]>([]);
   const [question, setQuestion]         = useState("");
@@ -66,7 +88,7 @@ export function KioskShell({
     const awx = (window as any).AirwallexComponentsSDK;
     if (!awx) return null;
     if (!awxInitDone.current || !paymentsRef.current) {
-      const instance = await awx.init({ env: airwallexEnv, enabledElements: ["payments"] });
+      const instance = await awx.init({ env: normalizedAirwallexEnv, enabledElements: ["payments"] });
       paymentsRef.current = instance.payments;
       awxInitDone.current = true;
     }
@@ -94,6 +116,7 @@ export function KioskShell({
           client_secret: paymentModal.clientSecret,
           currency: paymentModal.currency,
           appearance: { mode: "light", variables: { colorBrand: "#ed4c4c" } },
+          style: { base: { height: `${AIRWALLEX_DROPIN_MIN_HEIGHT}px` } },
         });
         dropIn.mount("awx-drop-in");
         dropInRef.current = dropIn;
@@ -112,7 +135,7 @@ export function KioskShell({
         setPaymentModal(null);
       }
     })();
-  }, [paymentModal, airwallexEnv]);
+  }, [paymentModal, normalizedAirwallexEnv]);
 
   const basketItems = useMemo(() =>
     basket
@@ -148,8 +171,8 @@ export function KioskShell({
     } finally { setAssistantBusy(false); }
   }
 
-  const isAirwallex = paymentProvider === "airwallex";
-  const usesAirwallexDropIn = isAirwallex && airwallexCheckoutMode === "dropin";
+  const isAirwallex = normalizedPaymentProvider === "airwallex";
+  const usesAirwallexDropIn = isAirwallex && normalizedAirwallexCheckoutMode === "dropin";
 
   async function startCheckout() {
     if (!basketItems.length || checkoutBusy) return;
@@ -161,14 +184,14 @@ export function KioskShell({
     try {
       const res = await fetch("/api/kiosk/checkout", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: basketItems.map(e => ({ saladId: e.salad.id, quantity: e.quantity })), provider: paymentProvider }),
+        body: JSON.stringify({ items: basketItems.map(e => ({ saladId: e.salad.id, quantity: e.quantity })), provider: normalizedPaymentProvider }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
       if (isAirwallex) {
         if (!data.intentId || !data.clientSecret) throw new Error("Airwallex checkout payload is incomplete");
-        if (airwallexCheckoutMode === "hosted") {
+        if (normalizedAirwallexCheckoutMode === "hosted") {
           setStatus({ text: "Opening Airwallex checkout…", ok: true });
           const sdk = awxReady ? await ensureAirwallexSdk() : null;
           if (sdk?.payments) {
@@ -176,7 +199,7 @@ export function KioskShell({
               intent_id: data.intentId,
               client_secret: data.clientSecret,
               currency: data.currency || "GBP",
-              country_code: airwallexCountryCode,
+              country_code: normalizedAirwallexCountryCode,
               successUrl: data.successUrl,
               appearance: { mode: "light", variables: { colorBrand: "#ed4c4c" } },
             });
@@ -248,7 +271,7 @@ export function KioskShell({
             background: "#f6f1f1", color: "#4a3f41",
             borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 600,
           }}>
-            {paymentProvider}
+            {normalizedPaymentProvider}
           </span>
         </div>
       </header>
@@ -521,6 +544,7 @@ export function KioskShell({
           <div style={{
             background: "#fff", borderRadius: 20, padding: "24px 24px 32px",
             width: "100%", maxWidth: 520,
+            maxHeight: "90vh", overflowY: "auto",
             boxShadow: "0 24px 64px rgba(0,0,0,0.35)",
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -535,7 +559,7 @@ export function KioskShell({
                 style={{ border: "none", background: "#f6f1f1", borderRadius: "50%", width: 36, height: 36, fontSize: 20, cursor: "pointer", color: "#7a6e70", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
               >×</button>
             </div>
-            <div id="awx-drop-in" style={{ minHeight: 120 }} />
+            <div id="awx-drop-in" style={{ minHeight: AIRWALLEX_DROPIN_MIN_HEIGHT }} />
           </div>
         </div>
       )}

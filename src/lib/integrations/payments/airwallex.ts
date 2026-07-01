@@ -6,11 +6,11 @@ import type {
   RefundResult,
 } from "../types";
 
-const BASE_URL = process.env.AIRWALLEX_API_URL || "https://api.airwallex.com/api/v1";
+const BASE_URL = (process.env.AIRWALLEX_API_URL || "https://api.airwallex.com/api/v1").trim();
 
 function getAirwallexCredentials() {
-  const clientId = process.env.AIRWALLEX_CLIENT_ID;
-  const apiKey = process.env.AIRWALLEX_API_KEY;
+  const clientId = process.env.AIRWALLEX_CLIENT_ID?.trim();
+  const apiKey = process.env.AIRWALLEX_API_KEY?.trim();
 
   if (!clientId || !apiKey) {
     throw new Error("AIRWALLEX_CLIENT_ID and AIRWALLEX_API_KEY must be configured");
