@@ -57,6 +57,8 @@ export interface CheckoutResult {
   checkoutUrl: string;
   sessionId: string;
   provider: string;
+  intentId?: string;
+  clientSecret?: string;
 }
 
 export interface WebhookResult {

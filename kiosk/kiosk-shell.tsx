@@ -2,11 +2,13 @@
 
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Script from "next/script";
 import type { KioskSalad } from "@kiosk/catalog";
 
 type BasketEntry   = { saladId: string; quantity: number };
 type AssistantMsg  = { role: "user" | "sal"; text: string };
+type PaymentModal  = { intentId: string; clientSecret: string; currency: string; orderId: string } | null;
 
 type Props = {
   businessName: string;
@@ -14,6 +16,9 @@ type Props = {
   quickPrompts: string[];
   salads: KioskSalad[];
   paymentProvider: string;
+  airwallexEnv?: "demo" | "prod";
+  airwallexCheckoutMode?: "dropin" | "hosted";
+  airwallexCountryCode?: string;
 };
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -35,13 +40,79 @@ const saladGradients = [
   "linear-gradient(135deg,#ffd0cd 0%,#ed4c4c22 100%)",
 ];
 
-export function KioskShell({ location, quickPrompts, salads, paymentProvider }: Props) {
+export function KioskShell({
+  location,
+  quickPrompts,
+  salads,
+  paymentProvider,
+  airwallexEnv = "demo",
+  airwallexCheckoutMode = "hosted",
+  airwallexCountryCode = "GB",
+}: Props) {
   const [basket, setBasket]             = useState<BasketEntry[]>([]);
   const [messages, setMessages]         = useState<AssistantMsg[]>([]);
   const [question, setQuestion]         = useState("");
   const [assistantBusy, setAssistantBusy] = useState(false);
   const [checkoutBusy, setCheckoutBusy] = useState(false);
   const [status, setStatus]             = useState<{ text: string; ok: boolean } | null>(null);
+  const [awxReady, setAwxReady]         = useState(false);
+  const [paymentModal, setPaymentModal] = useState<PaymentModal>(null);
+  // Refs so we never call init() more than once and can clean up the drop-in
+  const awxInitDone  = useRef(false);
+  const dropInRef    = useRef<any>(null);
+  const paymentsRef  = useRef<any>(null);
+
+  async function ensureAirwallexSdk() {
+    const awx = (window as any).AirwallexComponentsSDK;
+    if (!awx) return null;
+    if (!awxInitDone.current || !paymentsRef.current) {
+      const instance = await awx.init({ env: airwallexEnv, enabledElements: ["payments"] });
+      paymentsRef.current = instance.payments;
+      awxInitDone.current = true;
+    }
+    return { awx, payments: paymentsRef.current };
+  }
+
+  // Mount Airwallex drop-in element when modal opens
+  useEffect(() => {
+    if (!paymentModal) return;
+    (async () => {
+      try {
+        const sdk = await ensureAirwallexSdk();
+        if (!sdk) {
+          setStatus({ text: "Payment SDK not loaded — please refresh.", ok: false });
+          setPaymentModal(null);
+          return;
+        }
+        const { awx } = sdk;
+        // Unmount any previous drop-in before mounting a new one
+        try { dropInRef.current?.unmount?.(); } catch {}
+        dropInRef.current = null;
+
+        const dropIn = await awx.createElement("dropIn", {
+          intent_id: paymentModal.intentId,
+          client_secret: paymentModal.clientSecret,
+          currency: paymentModal.currency,
+          appearance: { mode: "light", variables: { colorBrand: "#ed4c4c" } },
+        });
+        dropIn.mount("awx-drop-in");
+        dropInRef.current = dropIn;
+
+        dropIn.on("success", () => {
+          setPaymentModal(null);
+          setBasket([]);
+          setStatus({ text: "Payment successful! Your order is being prepared.", ok: true });
+        });
+        dropIn.on("error", (event: any) => {
+          const msg = event?.detail?.error?.message || "Payment failed — please try again.";
+          setStatus({ text: msg, ok: false });
+        });
+      } catch (err) {
+        setStatus({ text: err instanceof Error ? err.message : "Payment failed to load", ok: false });
+        setPaymentModal(null);
+      }
+    })();
+  }, [paymentModal, airwallexEnv]);
 
   const basketItems = useMemo(() =>
     basket
@@ -77,8 +148,15 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
     } finally { setAssistantBusy(false); }
   }
 
+  const isAirwallex = paymentProvider === "airwallex";
+  const usesAirwallexDropIn = isAirwallex && airwallexCheckoutMode === "dropin";
+
   async function startCheckout() {
     if (!basketItems.length || checkoutBusy) return;
+    if (usesAirwallexDropIn && !awxReady) {
+      setStatus({ text: "Payment service is still loading — please try again.", ok: false });
+      return;
+    }
     setCheckoutBusy(true); setStatus(null);
     try {
       const res = await fetch("/api/kiosk/checkout", {
@@ -87,6 +165,42 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
+
+      if (isAirwallex) {
+        if (!data.intentId || !data.clientSecret) throw new Error("Airwallex checkout payload is incomplete");
+        if (airwallexCheckoutMode === "hosted") {
+          setStatus({ text: "Opening Airwallex checkout…", ok: true });
+          const sdk = awxReady ? await ensureAirwallexSdk() : null;
+          if (sdk?.payments) {
+            const maybeUrl = sdk.payments.redirectToCheckout({
+              intent_id: data.intentId,
+              client_secret: data.clientSecret,
+              currency: data.currency || "GBP",
+              country_code: airwallexCountryCode,
+              successUrl: data.successUrl,
+              appearance: { mode: "light", variables: { colorBrand: "#ed4c4c" } },
+            });
+            if (typeof maybeUrl === "string") {
+              window.location.assign(maybeUrl);
+            }
+            return;
+          }
+          if (data.checkoutUrl) {
+            window.location.assign(data.checkoutUrl);
+            return;
+          }
+          throw new Error("Airwallex hosted checkout is not ready yet");
+        }
+        setPaymentModal({
+          intentId: data.intentId,
+          clientSecret: data.clientSecret,
+          currency: data.currency || "GBP",
+          orderId: data.orderId,
+        });
+        return;
+      }
+
+      // Fallback: direct URL redirect (Stripe etc.)
       setStatus({ text: "Redirecting to payment…", ok: true });
       if (data.checkoutUrl) { window.location.assign(data.checkoutUrl); return; }
     } catch (err) {
@@ -96,6 +210,13 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8f8f8", fontFamily: "Figtree, system-ui, sans-serif" }}>
+
+      {/* Airwallex Components SDK */}
+      <Script
+        src="https://static.airwallex.com/components/sdk/v1/index.js"
+        strategy="afterInteractive"
+        onLoad={() => setAwxReady(true)}
+      />
 
       {/* ── Top bar ── */}
       <header style={{
@@ -265,13 +386,13 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
 
             <button
               onClick={() => void startCheckout()}
-              disabled={!basketItems.length || checkoutBusy}
+              disabled={!basketItems.length || checkoutBusy || (usesAirwallexDropIn && !awxReady)}
               style={{
                 marginTop: 14, width: "100%", padding: "14px 0", borderRadius: 999, border: "none",
                 background: basketItems.length ? "#ed4c4c" : "rgba(255,255,255,0.08)",
                 color: basketItems.length ? "#fff" : "#7a6e70",
                 fontSize: 16, fontWeight: 700,
-                cursor: basketItems.length && !checkoutBusy ? "pointer" : "not-allowed",
+                cursor: basketItems.length && !checkoutBusy && !(usesAirwallexDropIn && !awxReady) ? "pointer" : "not-allowed",
                 boxShadow: basketItems.length ? "0 4px 16px rgba(237,76,76,0.35)" : "none",
                 fontFamily: "inherit",
                 transition: "background 0.12s ease",
@@ -279,7 +400,11 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
               }}
             >
               <span className="kiosk-pay-text">
-                {checkoutBusy ? "Starting checkout…" : `Pay now — ${usd.format(total)}`}
+                {checkoutBusy
+                  ? "Starting checkout…"
+                  : usesAirwallexDropIn && !awxReady
+                    ? "Loading payment…"
+                    : `Pay now — ${usd.format(total)}`}
               </span>
             </button>
 
@@ -384,6 +509,36 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider }: 
       <footer style={{ textAlign: "center", padding: "16px 0 28px", fontSize: 11, color: "#b7adae", borderTop: "1px solid #ece5e5" }}>
         HeySalad® · love your food · Powered by Airwallex
       </footer>
+
+      {/* ── Airwallex Drop-in Payment Modal ── */}
+      {paymentModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 200,
+          background: "rgba(31,20,22,0.65)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16,
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: 20, padding: "24px 24px 32px",
+            width: "100%", maxWidth: 520,
+            boxShadow: "0 24px 64px rgba(0,0,0,0.35)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#b7adae" }}>Secure payment</p>
+                <h2 style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 20, fontWeight: 800, color: "#1f1416" }}>
+                  Pay {usd.format(total)}
+                </h2>
+              </div>
+              <button
+                onClick={() => setPaymentModal(null)}
+                style={{ border: "none", background: "#f6f1f1", borderRadius: "50%", width: 36, height: 36, fontSize: 20, cursor: "pointer", color: "#7a6e70", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
+              >×</button>
+            </div>
+            <div id="awx-drop-in" style={{ minHeight: 120 }} />
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* ── Animations ── */
