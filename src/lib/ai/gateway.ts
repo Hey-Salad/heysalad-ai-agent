@@ -30,6 +30,18 @@ function getProviderOptions() {
   };
 }
 
+function telemetryFor(functionId: string, options: AgentRunOptions) {
+  return {
+    isEnabled: true,
+    functionId,
+    metadata: {
+      businessId: options.businessId,
+      agentType: options.agentType,
+      ...(options.conversationId ? { conversationId: options.conversationId } : {}),
+    },
+  };
+}
+
 function serializeUsage(usage?: LanguageModelUsage) {
   if (!usage) return undefined;
   return {
@@ -63,6 +75,7 @@ export async function runAgent(options: AgentRunOptions) {
       system: options.systemPrompt,
       prompt: options.userMessage,
       providerOptions: getProviderOptions(),
+      experimental_telemetry: telemetryFor("runAgent", options),
     });
 
     await db.agentRun.update({
@@ -121,6 +134,7 @@ export async function runAgentWithTools<T extends z.ZodType>(
       schemaName: options.schemaName,
       schemaDescription: options.schemaDescription,
       providerOptions: getProviderOptions(),
+      experimental_telemetry: telemetryFor("runAgentWithTools", options),
     });
 
     await db.agentRun.update({

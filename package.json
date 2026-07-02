@@ -25,6 +25,7 @@
     "@ai-sdk/anthropic": "^1.0.0",
     "@ai-sdk/gateway": "^3.0.0",
     "@ai-sdk/openai": "^3.0.0",
+    "@anyway-sh/node-server-sdk": "^0.23.2",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "ai": "^7.0.0",
