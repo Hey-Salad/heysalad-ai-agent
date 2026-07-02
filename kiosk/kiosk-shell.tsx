@@ -210,15 +210,6 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider, ai
             Kiosk
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span className="kiosk-location" style={{ fontSize: 12, color: "#7a6e70", fontWeight: 500 }}>{location}</span>
-          <span style={{
-            background: "#f6f1f1", color: "#4a3f41",
-            borderRadius: 999, padding: "3px 10px", fontSize: 11, fontWeight: 600,
-          }}>
-            {paymentProvider}
-          </span>
-        </div>
       </header>
 
       {/* ── Main ── */}

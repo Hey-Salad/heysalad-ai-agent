@@ -61,7 +61,7 @@ export const KIOSK_SALADS: KioskSalad[] = [
     accent: "from-emerald-300 via-green-300 to-lime-200",
     description: "The cleanest option on the board with kale, avocado, and hemp seeds.",
     ingredients: ["kale", "avocado", "broccoli", "hemp seeds", "green goddess dressing"],
-    image: "https://images.unsplash.com/photo-1506354666786-959d6d497f1a?w=600&h=300&fit=crop&auto=format"
+    image: "https://images.unsplash.com/photo-1623428187969-5da2dcea5ebf?w=600&h=300&fit=crop&auto=format"
   },
   {
     id: "protein-paradise",
