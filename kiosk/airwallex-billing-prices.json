@@ -1,0 +1,30 @@
+{
+  "environment": "sandbox",
+  "generated_at": "2026-07-02T10:05:16.617Z",
+  "items": {
+    "rainbow-buddha": {
+      "product_id": "prd_hkdmb8lr8hk0ksdmtcg",
+      "price_id": "pri_hkdmb8lr8hk0ksdzob5",
+      "unit_amount": 12.99,
+      "currency": "USD"
+    },
+    "mediterranean-power": {
+      "product_id": "prd_hkdmbw4vshk0kse9sj8",
+      "price_id": "pri_hkdmbw4vshk0kseizjx",
+      "unit_amount": 11.99,
+      "currency": "USD"
+    },
+    "green-goddess": {
+      "product_id": "prd_hkdmbw4vshk0ksesrem",
+      "price_id": "pri_hkdmbw4vshk0ksf2nvz",
+      "unit_amount": 13.49,
+      "currency": "USD"
+    },
+    "protein-paradise": {
+      "product_id": "prd_hkdmbw4vshk0ksfc794",
+      "price_id": "pri_hkdmbw4vshk0ksfl5s9",
+      "unit_amount": 15.99,
+      "currency": "USD"
+    }
+  }
+}

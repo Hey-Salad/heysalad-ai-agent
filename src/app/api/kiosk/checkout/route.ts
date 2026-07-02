@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getSaladById, KIOSK_CONFIG } from "@kiosk/catalog";
 import { getPaymentProvider } from "@/lib/integrations/payments";
+import { createBillingCheckout } from "@/lib/integrations/payments/airwallex-billing";
 
 type CheckoutItem = {
   saladId: string;
@@ -47,10 +48,30 @@ export async function POST(request: NextRequest) {
     const successUrl = `${appUrl}/?status=success&orderId=${orderId}`;
     const cancelUrl = `${appUrl}/?status=cancelled&orderId=${orderId}`;
 
+    if (providerName === "airwallex_billing") {
+      const billingCheckout = await createBillingCheckout({
+        items: orderItems.map((entry) => ({ saladId: entry.salad.id, quantity: entry.quantity })),
+        successUrl,
+        backUrl: cancelUrl,
+        metadata: { orderId, kioskSlug: KIOSK_CONFIG.slug, itemCount: String(itemCount) },
+      });
+      return NextResponse.json({
+        orderId,
+        itemCount,
+        total: Number(total.toFixed(2)),
+        currency: "USD",
+        provider: billingCheckout.provider,
+        checkoutUrl: billingCheckout.checkoutUrl,
+        sessionId: billingCheckout.checkoutId,
+        successUrl,
+        cancelUrl,
+      });
+    }
+
     const paymentProvider = getPaymentProvider(providerName);
     const checkout = await paymentProvider.createCheckout({
       amount: Number(total.toFixed(2)),
-      currency: "GBP",
+      currency: "USD",
       description: `${KIOSK_CONFIG.name} order`,
       metadata: {
         orderId,
@@ -65,7 +86,7 @@ export async function POST(request: NextRequest) {
       orderId,
       itemCount,
       total: Number(total.toFixed(2)),
-      currency: "GBP",
+      currency: "USD",
       provider: checkout.provider,
       checkoutUrl: checkout.checkoutUrl,
       sessionId: checkout.sessionId,
