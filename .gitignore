@@ -43,3 +43,5 @@ next-env.d.ts
 # generated
 /src/generated/
 .vercel
+mcp-server/node_modules/
+mcp-server/.mcp-hub-state.json

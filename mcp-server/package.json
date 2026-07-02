@@ -1,0 +1,21 @@
+{
+  "name": "@heysalad/mcp-hub",
+  "version": "0.1.0",
+  "description": "HeySalad MCP Hub — coordinates Claude Code, Codex, and Cursor across devices",
+  "type": "module",
+  "bin": {
+    "heysalad-mcp": "./server.ts"
+  },
+  "scripts": {
+    "start": "npx tsx server.ts",
+    "dev": "npx tsx watch server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0",
+    "@types/node": "^22.0.0"
+  }
+}
