@@ -52,6 +52,23 @@ npm run dev
 
 Visit `http://localhost:3000` to see the platform.
 
+### Kiosk Slice
+
+This repo now includes a dedicated `kiosk/` folder and a `/kiosk` route that:
+
+- lists the current HeySalad bowls from a shared catalog
+- sends recommendation questions through the existing host agent
+- starts checkout through the payment provider abstraction
+
+To run the kiosk flow with Airwallex sandbox credentials:
+
+```env
+HEYSALAD_KIOSK_PAYMENT_PROVIDER="airwallex"
+HEYSALAD_AIRWALLEX_ENABLED="true"
+AIRWALLEX_CLIENT_ID="your-demo-client-id"
+AIRWALLEX_API_KEY="your-demo-api-key"
+```
+
 ## API Endpoints
 
 | Endpoint | Method | Purpose |
@@ -59,6 +76,9 @@ Visit `http://localhost:3000` to see the platform.
 | `/api/host` | POST | AI receptionist — process customer messages |
 | `/api/twilio/voice` | POST | Twilio webhook — handles inbound calls |
 | `/api/marketplace/demo` | POST | CoralOS + Solana marketplace demo |
+| `/api/kiosk/menu` | GET | Public salad menu for the kiosk slice |
+| `/api/kiosk/assistant` | POST | Public host-agent endpoint for kiosk recommendations |
+| `/api/kiosk/checkout` | POST | Starts checkout through the configured payment provider |
 | `/api/health` | GET | Health check |
 
 ### Example: Host Agent
@@ -86,6 +106,7 @@ curl -X POST http://localhost:3000/api/host \
 │   ├── subagents/              # Host, Knowledge, Sales, Ops, Compliance
 │   ├── tools/                  # create_booking, create_task, etc.
 │   └── skills/                 # Agent skill documents
+├── kiosk/                      # Kiosk-specific catalog and UI shell
 ├── prisma/
 │   ├── schema.prisma           # Database schema (Postgres)
 │   └── seed.ts                 # Demo data seeder
@@ -93,9 +114,11 @@ curl -X POST http://localhost:3000/api/host \
 │   ├── app/
 │   │   ├── api/                # API routes
 │   │   │   ├── host/           # Host agent endpoint
+│   │   │   ├── kiosk/          # Public kiosk routes
 │   │   │   ├── twilio/voice/   # Twilio voice webhook
 │   │   │   ├── marketplace/    # CoralOS demo
 │   │   │   └── health/         # Health check
+│   │   ├── kiosk/              # Kiosk page
 │   │   └── page.tsx            # Landing page
 │   └── lib/
 │       ├── ai/

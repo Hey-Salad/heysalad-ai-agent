@@ -17,11 +17,9 @@ type Props = {
   salads: KioskSalad[];
   paymentProvider: string;
   airwallexEnv?: "demo" | "prod";
-  airwallexCheckoutMode?: "dropin" | "hosted";
-  airwallexCountryCode?: string;
 };
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const gbp = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 
 // ── Dietary tag colours ───────────────────────────────────────────────────────
 const tagColour: Record<string, { bg: string; text: string }> = {
@@ -40,15 +38,7 @@ const saladGradients = [
   "linear-gradient(135deg,#ffd0cd 0%,#ed4c4c22 100%)",
 ];
 
-export function KioskShell({
-  location,
-  quickPrompts,
-  salads,
-  paymentProvider,
-  airwallexEnv = "demo",
-  airwallexCheckoutMode = "hosted",
-  airwallexCountryCode = "GB",
-}: Props) {
+export function KioskShell({ location, quickPrompts, salads, paymentProvider, airwallexEnv = "demo" }: Props) {
   const [basket, setBasket]             = useState<BasketEntry[]>([]);
   const [messages, setMessages]         = useState<AssistantMsg[]>([]);
   const [question, setQuestion]         = useState("");
@@ -57,62 +47,64 @@ export function KioskShell({
   const [status, setStatus]             = useState<{ text: string; ok: boolean } | null>(null);
   const [awxReady, setAwxReady]         = useState(false);
   const [paymentModal, setPaymentModal] = useState<PaymentModal>(null);
-  // Refs so we never call init() more than once and can clean up the drop-in
-  const awxInitDone  = useRef(false);
-  const dropInRef    = useRef<any>(null);
-  const paymentsRef  = useRef<any>(null);
+  const [cardReady, setCardReady]       = useState(false);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [cardBusy, setCardBusy]         = useState(false);
+  const awxInitDone = useRef(false);
+  const cardRef     = useRef<any>(null);
 
-  async function ensureAirwallexSdk() {
-    const awx = (window as any).AirwallexComponentsSDK;
-    if (!awx) return null;
-    if (!awxInitDone.current || !paymentsRef.current) {
-      const instance = await awx.init({ env: airwallexEnv, enabledElements: ["payments"] });
-      paymentsRef.current = instance.payments;
-      awxInitDone.current = true;
-    }
-    return { awx, payments: paymentsRef.current };
-  }
-
-  // Mount Airwallex drop-in element when modal opens
+  // Mount Airwallex card element (embeds inline — no redirect to checkout.airwallex.com)
   useEffect(() => {
     if (!paymentModal) return;
+    setCardReady(false);
+    setCardComplete(false);
+    setCardBusy(false);
+    const awx = (window as any).AirwallexComponentsSDK;
+    if (!awx) {
+      setStatus({ text: "Payment SDK not loaded — please refresh.", ok: false });
+      setPaymentModal(null);
+      return;
+    }
     (async () => {
       try {
-        const sdk = await ensureAirwallexSdk();
-        if (!sdk) {
-          setStatus({ text: "Payment SDK not loaded — please refresh.", ok: false });
-          setPaymentModal(null);
-          return;
+        if (!awxInitDone.current) {
+          await awx.init({ env: airwallexEnv, enabledElements: ["payments"], origin: window.location.origin });
+          awxInitDone.current = true;
         }
-        const { awx } = sdk;
-        // Unmount any previous drop-in before mounting a new one
-        try { dropInRef.current?.unmount?.(); } catch {}
-        dropInRef.current = null;
+        try { cardRef.current?.unmount?.(); } catch {}
+        cardRef.current = null;
 
-        const dropIn = await awx.createElement("dropIn", {
-          intent_id: paymentModal.intentId,
-          client_secret: paymentModal.clientSecret,
-          currency: paymentModal.currency,
-          appearance: { mode: "light", variables: { colorBrand: "#ed4c4c" } },
-        });
-        dropIn.mount("awx-drop-in");
-        dropInRef.current = dropIn;
+        // 'card' element embeds card fields as an iframe in the page — no HPP redirect
+        const card = await awx.createElement("card");
+        card.mount("awx-card");
+        cardRef.current = card;
 
-        dropIn.on("success", () => {
-          setPaymentModal(null);
-          setBasket([]);
-          setStatus({ text: "Payment successful! Your order is being prepared.", ok: true });
-        });
-        dropIn.on("error", (event: any) => {
-          const msg = event?.detail?.error?.message || "Payment failed — please try again.";
-          setStatus({ text: msg, ok: false });
-        });
+        card.on("ready",  ()          => setCardReady(true));
+        card.on("change", (e: any)    => setCardComplete(!!e?.detail?.complete));
+        card.on("error",  (e: any)    => setStatus({ text: e?.detail?.error?.message || "Card error.", ok: false }));
       } catch (err) {
-        setStatus({ text: err instanceof Error ? err.message : "Payment failed to load", ok: false });
+        setStatus({ text: err instanceof Error ? err.message : "Failed to load payment form", ok: false });
         setPaymentModal(null);
       }
     })();
+    return () => { try { cardRef.current?.unmount?.(); } catch {} };
   }, [paymentModal, airwallexEnv]);
+
+  async function confirmCard() {
+    if (!paymentModal || !cardRef.current || cardBusy) return;
+    setCardBusy(true);
+    setStatus(null);
+    try {
+      await cardRef.current.confirm({ id: paymentModal.intentId, client_secret: paymentModal.clientSecret });
+      setPaymentModal(null);
+      setBasket([]);
+      setStatus({ text: "Payment successful! Your order is being prepared.", ok: true });
+    } catch (err: any) {
+      setStatus({ text: err?.message || "Payment failed — please try again.", ok: false });
+    } finally {
+      setCardBusy(false);
+    }
+  }
 
   const basketItems = useMemo(() =>
     basket
@@ -149,11 +141,10 @@ export function KioskShell({
   }
 
   const isAirwallex = paymentProvider === "airwallex";
-  const usesAirwallexDropIn = isAirwallex && airwallexCheckoutMode === "dropin";
 
   async function startCheckout() {
     if (!basketItems.length || checkoutBusy) return;
-    if (usesAirwallexDropIn && !awxReady) {
+    if (isAirwallex && !awxReady) {
       setStatus({ text: "Payment service is still loading — please try again.", ok: false });
       return;
     }
@@ -168,29 +159,6 @@ export function KioskShell({
 
       if (isAirwallex) {
         if (!data.intentId || !data.clientSecret) throw new Error("Airwallex checkout payload is incomplete");
-        if (airwallexCheckoutMode === "hosted") {
-          setStatus({ text: "Opening Airwallex checkout…", ok: true });
-          const sdk = awxReady ? await ensureAirwallexSdk() : null;
-          if (sdk?.payments) {
-            const maybeUrl = sdk.payments.redirectToCheckout({
-              intent_id: data.intentId,
-              client_secret: data.clientSecret,
-              currency: data.currency || "GBP",
-              country_code: airwallexCountryCode,
-              successUrl: data.successUrl,
-              appearance: { mode: "light", variables: { colorBrand: "#ed4c4c" } },
-            });
-            if (typeof maybeUrl === "string") {
-              window.location.assign(maybeUrl);
-            }
-            return;
-          }
-          if (data.checkoutUrl) {
-            window.location.assign(data.checkoutUrl);
-            return;
-          }
-          throw new Error("Airwallex hosted checkout is not ready yet");
-        }
         setPaymentModal({
           intentId: data.intentId,
           clientSecret: data.clientSecret,
@@ -321,7 +289,7 @@ export function KioskShell({
                   <div style={{ padding: "14px 14px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
                       <h2 className="kiosk-card-name" style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 15, fontWeight: 700, color: "#1f1416", lineHeight: 1.3, flex: 1 }}>{salad.name}</h2>
-                      <span className="kiosk-card-price" style={{ fontWeight: 700, color: "#ed4c4c", fontSize: 14, marginLeft: 10, whiteSpace: "nowrap" }}>{usd.format(salad.price)}</span>
+                      <span className="kiosk-card-price" style={{ fontWeight: 700, color: "#ed4c4c", fontSize: 14, marginLeft: 10, whiteSpace: "nowrap" }}>{gbp.format(salad.price)}</span>
                     </div>
                     <p className="kiosk-card-desc" style={{ margin: "0 0 4px", fontSize: 13, color: "#7a6e70", lineHeight: 1.5 }}>{salad.description}</p>
                     <p style={{ margin: "0 0 14px", fontSize: 11, color: "#b7adae" }}>{salad.calories} kcal · {salad.protein}g protein</p>
@@ -365,10 +333,10 @@ export function KioskShell({
                 <div key={e.salad.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "9px 12px" }}>
                   <div>
                     <p style={{ margin: 0, fontWeight: 600, fontSize: 13 }}>{e.salad.name}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: "#b7adae" }}>{e.quantity} × {usd.format(e.salad.price)}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: "#b7adae" }}>{e.quantity} × {gbp.format(e.salad.price)}</p>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>{usd.format(e.salad.price * e.quantity)}</span>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{gbp.format(e.salad.price * e.quantity)}</span>
                     <button onClick={() => rem(e.salad.id)} className="kiosk-basket-remove" style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fca5a5", borderRadius: "50%", width: 26, height: 26, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, fontWeight: 700, flexShrink: 0 }}>×</button>
                   </div>
                 </div>
@@ -381,18 +349,18 @@ export function KioskShell({
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
               <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.14em", color: "#b7adae", alignSelf: "center" }}>Total</span>
-              <span style={{ fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 24, fontWeight: 800 }}>{usd.format(total)}</span>
+              <span style={{ fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 24, fontWeight: 800 }}>{gbp.format(total)}</span>
             </div>
 
             <button
               onClick={() => void startCheckout()}
-              disabled={!basketItems.length || checkoutBusy || (usesAirwallexDropIn && !awxReady)}
+              disabled={!basketItems.length || checkoutBusy || (isAirwallex && !awxReady)}
               style={{
                 marginTop: 14, width: "100%", padding: "14px 0", borderRadius: 999, border: "none",
                 background: basketItems.length ? "#ed4c4c" : "rgba(255,255,255,0.08)",
                 color: basketItems.length ? "#fff" : "#7a6e70",
                 fontSize: 16, fontWeight: 700,
-                cursor: basketItems.length && !checkoutBusy && !(usesAirwallexDropIn && !awxReady) ? "pointer" : "not-allowed",
+                cursor: basketItems.length && !checkoutBusy && !(isAirwallex && !awxReady) ? "pointer" : "not-allowed",
                 boxShadow: basketItems.length ? "0 4px 16px rgba(237,76,76,0.35)" : "none",
                 fontFamily: "inherit",
                 transition: "background 0.12s ease",
@@ -402,9 +370,9 @@ export function KioskShell({
               <span className="kiosk-pay-text">
                 {checkoutBusy
                   ? "Starting checkout…"
-                  : usesAirwallexDropIn && !awxReady
+                  : isAirwallex && !awxReady
                     ? "Loading payment…"
-                    : `Pay now — ${usd.format(total)}`}
+                    : `Pay now — ${gbp.format(total)}`}
               </span>
             </button>
 
@@ -527,7 +495,7 @@ export function KioskShell({
               <div>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#b7adae" }}>Secure payment</p>
                 <h2 style={{ margin: 0, fontFamily: "Grandstander, system-ui, sans-serif", fontSize: 20, fontWeight: 800, color: "#1f1416" }}>
-                  Pay {usd.format(total)}
+                  Pay {gbp.format(total)}
                 </h2>
               </div>
               <button
@@ -535,7 +503,25 @@ export function KioskShell({
                 style={{ border: "none", background: "#f6f1f1", borderRadius: "50%", width: 36, height: 36, fontSize: 20, cursor: "pointer", color: "#7a6e70", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}
               >×</button>
             </div>
-            <div id="awx-drop-in" style={{ minHeight: 120 }} />
+            {!cardReady && (
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: "#7a6e70" }}>Loading secure card form…</p>
+            )}
+            <div id="awx-card" style={{ minHeight: 56, padding: "12px 14px", border: "1px solid #ece5e5", borderRadius: 12 }} />
+            <button
+              onClick={() => void confirmCard()}
+              disabled={!cardReady || !cardComplete || cardBusy}
+              style={{
+                marginTop: 16, width: "100%", padding: "14px 0", borderRadius: 999, border: "none",
+                background: cardReady && cardComplete && !cardBusy ? "#ed4c4c" : "#f0e9e9",
+                color: cardReady && cardComplete && !cardBusy ? "#fff" : "#b7adae",
+                fontSize: 16, fontWeight: 700, fontFamily: "inherit",
+                cursor: cardReady && cardComplete && !cardBusy ? "pointer" : "not-allowed",
+                boxShadow: cardReady && cardComplete && !cardBusy ? "0 4px 16px rgba(237,76,76,0.35)" : "none",
+                minHeight: 48,
+              }}
+            >
+              {cardBusy ? "Processing…" : `Pay ${gbp.format(total)}`}
+            </button>
           </div>
         </div>
       )}

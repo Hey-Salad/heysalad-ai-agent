@@ -40,6 +40,7 @@
   ],
   "exclude": [
     "node_modules",
-    "agent"
+    "agent",
+    "mcp-server"
   ]
 }
