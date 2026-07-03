@@ -29,7 +29,7 @@ An AI phone agent and business platform that helps restaurants, cafes, bakeries,
 │                                                   │
 │  ┌─────────────────────────────────────────────┐  │
 │  │         Integration Layer                   │  │
-│  │  Payments: Stripe / Airwallex / PayPal      │  │
+│  │  Payments: Stripe / Airwallex / Anyway      │  │
 │  │  Voice:    Twilio / ElevenLabs / OpenAI     │  │
 │  │  Models:   OpenAI / HuggingFace / Azure     │  │
 │  │  Market:   CoralOS / Solana                 │  │
@@ -58,7 +58,8 @@ This repo now includes a dedicated `kiosk/` folder and a `/kiosk` route that:
 
 - lists the current HeySalad bowls from a shared catalog
 - sends recommendation questions through the existing host agent
-- starts checkout through the payment provider abstraction
+- starts card checkout through the payment provider abstraction
+- exposes an optional Anyway agent-wallet checkout and offer metadata
 
 To run the kiosk flow with Airwallex sandbox credentials:
 
@@ -79,6 +80,9 @@ AIRWALLEX_API_KEY="your-demo-api-key"
 | `/api/kiosk/menu` | GET | Public salad menu for the kiosk slice |
 | `/api/kiosk/assistant` | POST | Public host-agent endpoint for kiosk recommendations |
 | `/api/kiosk/checkout` | POST | Starts checkout through the configured payment provider |
+| `/api/webhooks/anyway` | POST | Receives signed Anyway order events |
+| `/offer.json` | GET | Agent-readable kiosk menu and checkout metadata |
+| `/.well-known/x402` | GET | Agent payment discovery metadata |
 | `/api/health` | GET | Health check |
 
 ### Example: Host Agent
@@ -150,6 +154,7 @@ All integrations are **feature-flagged** — enable only what you need:
 | Azure OpenAI | `HEYSALAD_MICROSOFT_ENABLED` | Azure-hosted models |
 | Airwallex | `HEYSALAD_AIRWALLEX_ENABLED` | Global payments + FX |
 | PayPal | `HEYSALAD_PAYPAL_ENABLED` | Alternative payments |
+| Anyway | `ANYWAY_KIOSK_PAYMENT_LINK_ID` | Agent wallet checkout via USDC on Base |
 | CoralOS | `HEYSALAD_CORALOS_ENABLED` | Agent marketplace |
 | Solana | `HEYSALAD_SOLANA_ENABLED` | Devnet escrow + Solana Pay |
 | Fetch.ai | `HEYSALAD_FETCHAI_ENABLED` | Agent interop bridge |
@@ -199,7 +204,7 @@ curl -X POST http://localhost:3000/api/marketplace/demo \
 | Database | PostgreSQL via Prisma 7.8 (Neon recommended) |
 | AI | Vercel AI SDK + Eve agent framework |
 | Voice/SMS | Twilio |
-| Payments | Stripe (default) |
+| Payments | Stripe, Airwallex, PayPal, Anyway |
 | Language | TypeScript |
 
 ## Contributing

@@ -17,6 +17,7 @@ type Props = {
   salads: KioskSalad[];
   paymentProvider: string;
   airwallexEnv?: "demo" | "prod";
+  anywayCheckoutEnabled?: boolean;
 };
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -38,7 +39,14 @@ const saladGradients = [
   "linear-gradient(135deg,#ffd0cd 0%,#ed4c4c22 100%)",
 ];
 
-export function KioskShell({ location, quickPrompts, salads, paymentProvider, airwallexEnv = "demo" }: Props) {
+export function KioskShell({
+  location,
+  quickPrompts,
+  salads,
+  paymentProvider,
+  airwallexEnv = "demo",
+  anywayCheckoutEnabled = false,
+}: Props) {
   const [basket, setBasket]             = useState<BasketEntry[]>([]);
   const [messages, setMessages]         = useState<AssistantMsg[]>([]);
   const [question, setQuestion]         = useState("");
@@ -142,9 +150,11 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider, ai
 
   const isAirwallex = paymentProvider === "airwallex";
 
-  async function startCheckout() {
+  async function startCheckout(provider = paymentProvider) {
+    const providerIsAirwallex = provider === "airwallex";
+
     if (!basketItems.length || checkoutBusy) return;
-    if (isAirwallex && !awxReady) {
+    if (providerIsAirwallex && !awxReady) {
       setStatus({ text: "Payment service is still loading — please try again.", ok: false });
       return;
     }
@@ -152,12 +162,12 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider, ai
     try {
       const res = await fetch("/api/kiosk/checkout", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: basketItems.map(e => ({ saladId: e.salad.id, quantity: e.quantity })), provider: paymentProvider }),
+        body: JSON.stringify({ items: basketItems.map(e => ({ saladId: e.salad.id, quantity: e.quantity })), provider }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
 
-      if (isAirwallex) {
+      if (providerIsAirwallex) {
         if (!data.intentId || !data.clientSecret) throw new Error("Airwallex checkout payload is incomplete");
         setPaymentModal({
           intentId: data.intentId,
@@ -168,8 +178,7 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider, ai
         return;
       }
 
-      // Fallback: direct URL redirect (Stripe etc.)
-      setStatus({ text: "Redirecting to payment…", ok: true });
+      setStatus({ text: provider === "anyway" ? "Opening agent wallet checkout…" : "Redirecting to payment…", ok: true });
       if (data.checkoutUrl) { window.location.assign(data.checkoutUrl); return; }
     } catch (err) {
       setStatus({ text: err instanceof Error ? err.message : "Checkout failed", ok: false });
@@ -366,6 +375,25 @@ export function KioskShell({ location, quickPrompts, salads, paymentProvider, ai
                     : `Pay now — ${usd.format(total)}`}
               </span>
             </button>
+
+            {anywayCheckoutEnabled && (
+              <button
+                onClick={() => void startCheckout("anyway")}
+                disabled={!basketItems.length || checkoutBusy}
+                style={{
+                  marginTop: 10, width: "100%", padding: "12px 0", borderRadius: 999,
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: basketItems.length ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+                  color: basketItems.length ? "#fff" : "#7a6e70",
+                  fontSize: 14, fontWeight: 700,
+                  cursor: basketItems.length && !checkoutBusy ? "pointer" : "not-allowed",
+                  fontFamily: "inherit",
+                  minHeight: 44,
+                }}
+              >
+                {checkoutBusy ? "Starting checkout…" : "Agent wallet - Anyway"}
+              </button>
+            )}
 
             {status && (
               <p style={{ margin: "10px 0 0", fontSize: 12, textAlign: "center", color: status.ok ? "#6ee7b7" : "#fca5a5" }}>

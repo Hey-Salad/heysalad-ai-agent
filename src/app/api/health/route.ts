@@ -7,7 +7,7 @@ export async function GET() {
     platform: "heysalad-ai-agent",
     agents: ["host", "knowledge", "sales", "operations", "compliance"],
     integrations: {
-      payments: ["stripe", "airwallex", "paypal"],
+      payments: ["stripe", "airwallex", "paypal", "anyway"],
       voice: ["twilio", "elevenlabs", "openai"],
       models: ["openai", "huggingface", "azure"],
       marketplace: ["coralos", "solana"],
