@@ -1,6 +1,7 @@
 {
   "name": "@heysalad/mcp-hub",
   "version": "0.1.0",
+  "license": "AGPL-3.0-only",
   "description": "HeySalad MCP Hub — coordinates Claude Code, Codex, and Cursor across devices",
   "type": "module",
   "bin": {
