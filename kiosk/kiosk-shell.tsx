@@ -319,7 +319,7 @@ export function KioskShell({
           </div>
         </div>
 
-        {/* ── Right: Basket + Sal ── */}
+        {/* ── Right: Basket + Sally ── */}
         <div className="kiosk-sidebar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* Basket card */}
